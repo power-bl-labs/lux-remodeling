@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getDemoLogo } from "@/lib/demo-store";
+import { fetchSiteBranding } from "@/lib/site-branding-client";
 
 const navItems = [
   {
@@ -61,8 +61,8 @@ export function SiteHeader() {
 
   useEffect(() => {
     async function syncLogo() {
-      const nextLogo = await getDemoLogo();
-      setLogoSrc(nextLogo ?? "/logo.svg");
+      const branding = await fetchSiteBranding();
+      setLogoSrc(branding.logoSrc ?? "/logo.svg");
     }
 
     void syncLogo();

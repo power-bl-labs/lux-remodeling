@@ -5,17 +5,20 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   DemoLead,
-  DemoThemeSettings,
   getDemoAdminAuth,
   getDemoAdminCredentials,
-  getDemoLogo,
-  getDemoTheme,
-  saveDemoLogo,
   saveDemoAdminPassword,
-  saveDemoTheme,
   setDemoAdminAuth,
 } from "@/lib/demo-store";
+import {
+  defaultBrandTheme,
+  type BrandThemeSettings,
+} from "@/lib/brand-theme";
 import { fetchStoredLeads } from "@/lib/lead-notifications";
+import {
+  fetchSiteBranding,
+  saveSiteBranding,
+} from "@/lib/site-branding-client";
 import { toDialableUsPhone } from "@/lib/us-phone";
 
 type SidebarView = "branding" | "leads";
@@ -37,8 +40,8 @@ export function AdminDemoShell() {
   const [view, setView] = useState<SidebarView>("leads");
   const [leadTab, setLeadTab] = useState<LeadTab>("Quick Lead");
   const [leads, setLeads] = useState<DemoLead[]>([]);
-  const [theme, setTheme] = useState<DemoThemeSettings>(getDemoTheme());
-  const [themeDraft, setThemeDraft] = useState<DemoThemeSettings>(getDemoTheme());
+  const [theme, setTheme] = useState<BrandThemeSettings>(defaultBrandTheme);
+  const [themeDraft, setThemeDraft] = useState<BrandThemeSettings>(defaultBrandTheme);
   const [logo, setLogo] = useState<string | null>(null);
   const [logoDraft, setLogoDraft] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -62,40 +65,39 @@ export function AdminDemoShell() {
       setLeads(nextLeads);
     }
 
-    function syncTheme() {
-      const nextTheme = getDemoTheme();
+    async function syncBranding() {
+      const branding = await fetchSiteBranding();
+      const nextTheme = {
+        brandBlue: branding.brandBlue,
+        brandDark: branding.brandDark,
+        brandSoft: branding.brandSoft,
+        brandAccent: branding.brandAccent,
+      };
+
       setTheme(nextTheme);
       setThemeDraft(nextTheme);
-    }
-
-    async function syncLogo() {
-      const nextLogo = await getDemoLogo();
-      setLogo(nextLogo);
-      setLogoDraft(nextLogo);
+      setLogo(branding.logoSrc);
+      setLogoDraft(branding.logoSrc);
     }
 
     const frame = window.requestAnimationFrame(() => {
       setIsAuthed(getDemoAdminAuth());
-
-      const nextTheme = getDemoTheme();
-      setTheme(nextTheme);
-      setThemeDraft(nextTheme);
       setIsHydrated(true);
     });
 
     void syncLeads();
-    void syncLogo();
+    void syncBranding();
     window.addEventListener("storage", syncLeads);
     window.addEventListener("lux-demo-leads-updated", syncLeads);
-    window.addEventListener("lux-demo-theme-updated", syncTheme);
-    window.addEventListener("lux-demo-logo-updated", syncLogo);
+    window.addEventListener("lux-demo-theme-updated", syncBranding);
+    window.addEventListener("lux-demo-logo-updated", syncBranding);
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("storage", syncLeads);
       window.removeEventListener("lux-demo-leads-updated", syncLeads);
-      window.removeEventListener("lux-demo-theme-updated", syncTheme);
-      window.removeEventListener("lux-demo-logo-updated", syncLogo);
+      window.removeEventListener("lux-demo-theme-updated", syncBranding);
+      window.removeEventListener("lux-demo-logo-updated", syncBranding);
     };
   }, []);
 
@@ -133,9 +135,9 @@ export function AdminDemoShell() {
     setIsAuthed(false);
   }
 
-  function updateThemeField<K extends keyof DemoThemeSettings>(
+  function updateThemeField<K extends keyof BrandThemeSettings>(
     key: K,
-    value: DemoThemeSettings[K],
+    value: BrandThemeSettings[K],
   ) {
     setThemeDraft({
       ...themeDraft,
@@ -143,9 +145,18 @@ export function AdminDemoShell() {
     });
   }
 
-  function handleThemeSave() {
-    setTheme(themeDraft);
-    saveDemoTheme(themeDraft);
+  async function handleThemeSave() {
+    const branding = await saveSiteBranding(themeDraft);
+    const nextTheme = {
+      brandBlue: branding.brandBlue,
+      brandDark: branding.brandDark,
+      brandSoft: branding.brandSoft,
+      brandAccent: branding.brandAccent,
+    };
+
+    setTheme(nextTheme);
+    setThemeDraft(nextTheme);
+    window.dispatchEvent(new CustomEvent("lux-demo-theme-updated"));
     setThemeSaved(true);
     window.setTimeout(() => setThemeSaved(false), 1800);
   }
@@ -172,9 +183,13 @@ export function AdminDemoShell() {
     }
 
     try {
-      await saveDemoLogo(logoDraft);
-      setLogo(logoDraft);
+      const branding = await saveSiteBranding({
+        logoSrc: logoDraft,
+      });
+      setLogo(branding.logoSrc);
+      setLogoDraft(branding.logoSrc);
       setLogoError(null);
+      window.dispatchEvent(new CustomEvent("lux-demo-logo-updated"));
       setLogoSaved(true);
       window.setTimeout(() => setLogoSaved(false), 1800);
     } catch {

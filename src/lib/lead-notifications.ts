@@ -18,7 +18,17 @@ export type StoredLead = LeadNotificationPayload & {
   createdAt: string;
 };
 
+function canUseBrowserFallback() {
+  return (
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  );
+}
+
 export async function submitLead(payload: LeadNotificationPayload) {
+  let shouldDispatch = false;
+
   try {
     const response = await fetch("/api/lead-notifications", {
       method: "POST",
@@ -31,10 +41,19 @@ export async function submitLead(payload: LeadNotificationPayload) {
     if (!response.ok) {
       throw new Error("Lead persistence failed");
     }
-  } catch {
-    saveDemoLead(payload);
+
+    shouldDispatch = true;
+    return await response.json();
+  } catch (error) {
+    if (canUseBrowserFallback()) {
+      saveDemoLead(payload);
+      shouldDispatch = true;
+      return { ok: true, fallback: true as const };
+    }
+
+    throw error;
   } finally {
-    if (typeof window !== "undefined") {
+    if (shouldDispatch && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("lux-demo-leads-updated"));
     }
   }
@@ -54,6 +73,6 @@ export async function fetchStoredLeads() {
     const data = (await response.json()) as { leads?: StoredLead[] };
     return Array.isArray(data.leads) ? data.leads : [];
   } catch {
-    return getDemoLeads();
+    return canUseBrowserFallback() ? getDemoLeads() : [];
   }
 }

@@ -37,8 +37,24 @@ export async function POST(request: Request) {
     }
 
     const lead = await createStoredLead(body);
-    const result = await sendTelegramLeadNotification(body);
-    return NextResponse.json({ ok: true, skipped: result.skipped ?? false, lead });
+    let skipped = true;
+    let notificationError: string | null = null;
+
+    try {
+      const result = await sendTelegramLeadNotification(body);
+      skipped = result.skipped ?? false;
+    } catch (error) {
+      notificationError =
+        error instanceof Error ? error.message : "Telegram notification failed";
+      console.error("Telegram notification failed after lead persistence:", error);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      skipped,
+      notificationError,
+      lead,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

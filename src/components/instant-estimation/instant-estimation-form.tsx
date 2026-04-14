@@ -45,6 +45,7 @@ export function InstantEstimationForm() {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const estimate = useMemo(() => {
     const serviceData =
@@ -74,6 +75,7 @@ export function InstantEstimationForm() {
     }
 
     setPhoneError(null);
+    setSubmitError(null);
 
     const nextLead = {
       type: "Instant Estimation",
@@ -88,9 +90,12 @@ export function InstantEstimationForm() {
       estimate,
     } as const;
 
-    await submitLead(nextLead);
-
-    setSubmitted(true);
+    try {
+      await submitLead(nextLead);
+      setSubmitted(true);
+    } catch {
+      setSubmitError("We could not save your request right now. Please try again.");
+    }
   }
 
   if (submitted) {
@@ -253,6 +258,8 @@ export function InstantEstimationForm() {
             />
             {phoneError ? (
               <span className="text-[13px] font-medium text-[#ffb4b4]">{phoneError}</span>
+            ) : submitError ? (
+              <span className="text-[13px] font-medium text-[#ffb4b4]">{submitError}</span>
             ) : null}
           </label>
         </div>

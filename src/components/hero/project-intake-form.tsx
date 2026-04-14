@@ -46,6 +46,7 @@ export function ProjectIntakeForm({
   const [phone, setPhone] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const serviceOptions = useMemo(() => serviceOptionsByMode[mode], [mode]);
 
@@ -64,6 +65,7 @@ export function ProjectIntakeForm({
     }
 
     setPhoneError(null);
+    setSubmitError(null);
 
     const nextLead = {
       type: "Quick Lead",
@@ -72,8 +74,12 @@ export function ProjectIntakeForm({
       phone: phone.trim(),
     } as const;
 
-    await submitLead(nextLead);
-    setIsSubmitted(true);
+    try {
+      await submitLead(nextLead);
+      setIsSubmitted(true);
+    } catch {
+      setSubmitError("We could not save your request right now. Please try again.");
+    }
   }
 
   return (
@@ -181,6 +187,9 @@ export function ProjectIntakeForm({
                 </button>
                 {phoneError ? (
                   <p className="text-right text-sm font-medium text-[#ffb4b4]">{phoneError}</p>
+                ) : null}
+                {!phoneError && submitError ? (
+                  <p className="text-right text-sm font-medium text-[#ffb4b4]">{submitError}</p>
                 ) : null}
               </div>
             ) : null}
