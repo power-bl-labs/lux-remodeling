@@ -100,7 +100,7 @@ export async function listStoredLeads(): Promise<StoredLead[]> {
       mode: metadata.mode ?? "Remodel",
       service: metadata.service ?? lead.projectType ?? "Unknown Service",
       phone: metadata.phone ?? lead.phone ?? "",
-      name: metadata.name ?? fallbackName || undefined,
+      name: metadata.name ?? fallbackName ?? undefined,
       zipCode: metadata.zipCode ?? lead.zipCode ?? undefined,
       timeline: metadata.timeline ?? undefined,
       squareFootage: metadata.squareFootage ?? undefined,

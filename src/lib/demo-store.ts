@@ -22,9 +22,15 @@ export type DemoThemeSettings = {
   brandAccent: string;
 };
 
+export type DemoAdminCredentials = {
+  username: string;
+  password: string;
+};
+
 const DEMO_LEADS_KEY = "lux-demo-leads";
 const DEMO_THEME_KEY = "lux-demo-theme";
 const DEMO_AUTH_KEY = "lux-demo-admin-auth";
+const DEMO_AUTH_CREDENTIALS_KEY = "lux-demo-admin-credentials";
 const DEMO_LOGO_KEY = "lux-demo-logo";
 const DEMO_ASSETS_DB = "lux-demo-assets";
 const DEMO_ASSETS_STORE = "assets";
@@ -34,6 +40,11 @@ export const defaultDemoTheme: DemoThemeSettings = {
   brandDark: "#14162b",
   brandSoft: "#edf2f8",
   brandAccent: "#f0c62e",
+};
+
+export const defaultDemoAdminCredentials: DemoAdminCredentials = {
+  username: "admin",
+  password: "admin",
 };
 
 function isBrowser() {
@@ -190,6 +201,43 @@ export function setDemoAdminAuth(isAuthed: boolean) {
   } else {
     window.localStorage.removeItem(DEMO_AUTH_KEY);
   }
+}
+
+export function getDemoAdminCredentials() {
+  if (!isBrowser()) {
+    return defaultDemoAdminCredentials;
+  }
+
+  const raw = window.localStorage.getItem(DEMO_AUTH_CREDENTIALS_KEY);
+  if (!raw) {
+    return defaultDemoAdminCredentials;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<DemoAdminCredentials>;
+
+    return {
+      username: parsed.username?.trim() || defaultDemoAdminCredentials.username,
+      password: parsed.password?.trim() || defaultDemoAdminCredentials.password,
+    };
+  } catch {
+    return defaultDemoAdminCredentials;
+  }
+}
+
+export function saveDemoAdminPassword(password: string) {
+  if (!isBrowser()) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    DEMO_AUTH_CREDENTIALS_KEY,
+    JSON.stringify({
+      username: defaultDemoAdminCredentials.username,
+      password,
+    } satisfies DemoAdminCredentials),
+  );
+  window.dispatchEvent(new CustomEvent("lux-demo-admin-credentials-updated"));
 }
 
 export async function getDemoLogo() {

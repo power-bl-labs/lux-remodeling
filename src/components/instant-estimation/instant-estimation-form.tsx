@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { submitLead } from "@/lib/lead-notifications";
+import { formatUsPhoneInput, isValidUsPhone } from "@/lib/us-phone";
 
 const serviceOptions = [
   { value: "Kitchen Remodeling", base: 18000 },
@@ -43,6 +44,7 @@ export function InstantEstimationForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const estimate = useMemo(() => {
     const serviceData =
@@ -62,9 +64,16 @@ export function InstantEstimationForm() {
   }, [propertyType, service, squareFootage, timeline, zipCode]);
 
   async function handleSubmit() {
-    if (!name.trim() || !phone.trim() || !zipCode.trim()) {
+    if (!name.trim() || !zipCode.trim()) {
       return;
     }
+
+    if (!isValidUsPhone(phone)) {
+      setPhoneError("Enter a valid U.S. phone number.");
+      return;
+    }
+
+    setPhoneError(null);
 
     const nextLead = {
       type: "Instant Estimation",
@@ -231,11 +240,20 @@ export function InstantEstimationForm() {
             <input
               className="h-13 rounded-[10px] border border-white/12 bg-white px-4 text-[15px] font-medium text-[#14162b] outline-none"
               inputMode="tel"
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="Enter Your Phone Number"
+              onChange={(event) => {
+                const nextValue = formatUsPhoneInput(event.target.value);
+                setPhone(nextValue);
+                if (phoneError) {
+                  setPhoneError(null);
+                }
+              }}
+              placeholder="(408) 555-0123"
               type="tel"
               value={phone}
             />
+            {phoneError ? (
+              <span className="text-[13px] font-medium text-[#ffb4b4]">{phoneError}</span>
+            ) : null}
           </label>
         </div>
 

@@ -7,13 +7,16 @@ import {
   DemoLead,
   DemoThemeSettings,
   getDemoAdminAuth,
+  getDemoAdminCredentials,
   getDemoLogo,
   getDemoTheme,
   saveDemoLogo,
+  saveDemoAdminPassword,
   saveDemoTheme,
   setDemoAdminAuth,
 } from "@/lib/demo-store";
 import { fetchStoredLeads } from "@/lib/lead-notifications";
+import { toDialableUsPhone } from "@/lib/us-phone";
 
 type SidebarView = "branding" | "leads";
 type LeadTab = "Quick Lead" | "Instant Estimation";
@@ -25,10 +28,6 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function normalizePhone(phone: string) {
-  return phone.replace(/[^\d+]/g, "");
 }
 
 export function AdminDemoShell() {
@@ -45,6 +44,8 @@ export function AdminDemoShell() {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [themeSaved, setThemeSaved] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
+  const [securityError, setSecurityError] = useState<string | null>(null);
+  const [securitySaved, setSecuritySaved] = useState(false);
 
   const quickLeads = useMemo(
     () => leads.filter((lead) => lead.type === "Quick Lead"),
@@ -115,15 +116,16 @@ export function AdminDemoShell() {
   function handleLogin(formData: FormData) {
     const username = String(formData.get("username") ?? "").trim();
     const password = String(formData.get("password") ?? "").trim();
+    const credentials = getDemoAdminCredentials();
 
-    if (username === "admin" && password === "admin") {
+    if (username === credentials.username && password === credentials.password) {
       setDemoAdminAuth(true);
       setIsAuthed(true);
       setLoginError(null);
       return;
     }
 
-    setLoginError("Use admin / admin for the local demo login.");
+    setLoginError("Use your saved admin demo password.");
   }
 
   function handleLogout() {
@@ -178,6 +180,27 @@ export function AdminDemoShell() {
     } catch {
       setLogoError("Could not save this logo file. Try a smaller SVG or image.");
     }
+  }
+
+  function handlePasswordSave(formData: FormData) {
+    setSecurityError(null);
+
+    const nextPassword = String(formData.get("nextPassword") ?? "").trim();
+    const confirmPassword = String(formData.get("confirmPassword") ?? "").trim();
+
+    if (nextPassword.length < 8) {
+      setSecurityError("Use at least 8 characters for the admin demo password.");
+      return;
+    }
+
+    if (nextPassword !== confirmPassword) {
+      setSecurityError("The new password and confirmation do not match.");
+      return;
+    }
+
+    saveDemoAdminPassword(nextPassword);
+    setSecuritySaved(true);
+    window.setTimeout(() => setSecuritySaved(false), 1800);
   }
 
   if (!isAuthed) {
@@ -455,6 +478,54 @@ export function AdminDemoShell() {
 
               <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
                 <h3 className="text-[24px] leading-[1] font-semibold tracking-[-0.04em] text-[var(--brand-dark)]">
+                  Security
+                </h3>
+                <p className="mt-3 text-[15px] leading-7 text-[#667085]">
+                  Change the local admin demo password used for signing into this dashboard.
+                </p>
+
+                <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
+                  Username: <span className="font-semibold text-[#14162b]">admin</span>
+                </div>
+
+                <form action={handlePasswordSave} className="mt-5 grid gap-4">
+                  <label className="grid gap-2">
+                    <span className="text-[14px] font-semibold text-[#344054]">New Password</span>
+                    <input
+                      className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
+                      name="nextPassword"
+                      placeholder="At least 8 characters"
+                      type="password"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-[14px] font-semibold text-[#344054]">Confirm Password</span>
+                    <input
+                      className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
+                      name="confirmPassword"
+                      placeholder="Repeat the new password"
+                      type="password"
+                    />
+                  </label>
+
+                  <button
+                    className="inline-flex h-12 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(51,72,255,0.24)] transition hover:-translate-y-0.5 hover:opacity-95"
+                    style={{ color: "#ffffff" }}
+                    type="submit"
+                  >
+                    Save Changes
+                  </button>
+                </form>
+                {securitySaved ? (
+                  <p className="mt-3 text-sm font-semibold text-[#16a34a]">Saved</p>
+                ) : null}
+                {securityError ? (
+                  <p className="mt-3 text-sm font-medium text-[#b42318]">{securityError}</p>
+                ) : null}
+              </div>
+
+              <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
+                <h3 className="text-[24px] leading-[1] font-semibold tracking-[-0.04em] text-[var(--brand-dark)]">
                   Quick Preview
                 </h3>
                 <div
@@ -560,14 +631,14 @@ export function AdminDemoShell() {
                         <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                           <a
                             className="inline-flex h-11 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[14px] font-semibold text-white"
-                            href={`tel:${normalizePhone(lead.phone)}`}
+                            href={`tel:${toDialableUsPhone(lead.phone)}`}
                             style={{ color: "#ffffff" }}
                           >
                             Call Lead
                           </a>
                           <a
                             className="inline-flex h-11 items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white px-5 text-[14px] font-semibold text-[#344054]"
-                            href={`sms:${normalizePhone(lead.phone)}`}
+                            href={`sms:${toDialableUsPhone(lead.phone)}`}
                           >
                             Send SMS
                           </a>
@@ -669,15 +740,15 @@ export function AdminDemoShell() {
 
                           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                             <a
-                              className="inline-flex h-11 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[14px] font-semibold text-white"
-                              href={`tel:${normalizePhone(lead.phone)}`}
+                            className="inline-flex h-11 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[14px] font-semibold text-white"
+                              href={`tel:${toDialableUsPhone(lead.phone)}`}
                               style={{ color: "#ffffff" }}
                             >
                               Call Lead
                             </a>
                             <a
-                              className="inline-flex h-11 items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white px-5 text-[14px] font-semibold text-[#344054]"
-                              href={`sms:${normalizePhone(lead.phone)}`}
+                            className="inline-flex h-11 items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white px-5 text-[14px] font-semibold text-[#344054]"
+                              href={`sms:${toDialableUsPhone(lead.phone)}`}
                             >
                               Send SMS
                             </a>

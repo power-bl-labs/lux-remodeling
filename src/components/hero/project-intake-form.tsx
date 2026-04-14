@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { submitLead } from "@/lib/lead-notifications";
+import { formatUsPhoneInput, isValidUsPhone } from "@/lib/us-phone";
 
 export type IntakeMode = "Remodel" | "Design" | "Build";
 
@@ -44,6 +45,7 @@ export function ProjectIntakeForm({
   const [service, setService] = useState("");
   const [phone, setPhone] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const serviceOptions = useMemo(() => serviceOptionsByMode[mode], [mode]);
 
@@ -56,9 +58,12 @@ export function ProjectIntakeForm({
   }
 
   async function handleSubmit() {
-    if (!phone.trim()) {
+    if (!isValidUsPhone(phone)) {
+      setPhoneError("Enter a valid U.S. phone number.");
       return;
     }
+
+    setPhoneError(null);
 
     const nextLead = {
       type: "Quick Lead",
@@ -141,8 +146,14 @@ export function ProjectIntakeForm({
                   aria-label="Phone Number"
                   className="block h-[56px] w-full min-w-0 rounded-[10px] border-0 bg-white px-5 text-[16px] leading-none font-semibold text-[#101114] outline-none placeholder:text-[16px] placeholder:leading-none placeholder:font-medium placeholder:text-[#8b93a1] md:text-[17px] md:placeholder:text-[17px]"
                   inputMode="tel"
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="Enter Your Phone Number"
+                  onChange={(event) => {
+                    const nextValue = formatUsPhoneInput(event.target.value);
+                    setPhone(nextValue);
+                    if (phoneError) {
+                      setPhoneError(null);
+                    }
+                  }}
+                  placeholder="(408) 555-0123"
                   type="tel"
                   value={phone}
                 />
@@ -160,13 +171,18 @@ export function ProjectIntakeForm({
 
           <div className="mt-3 h-6">
             {step === 2 ? (
-              <button
-                className="text-sm font-semibold text-[var(--brand-blue)] transition hover:text-white"
-                onClick={() => setStep(1)}
-                type="button"
-              >
-                Back
-              </button>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  className="text-sm font-semibold text-[var(--brand-blue)] transition hover:text-white"
+                  onClick={() => setStep(1)}
+                  type="button"
+                >
+                  Back
+                </button>
+                {phoneError ? (
+                  <p className="text-right text-sm font-medium text-[#ffb4b4]">{phoneError}</p>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
