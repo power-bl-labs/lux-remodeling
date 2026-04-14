@@ -1,3 +1,5 @@
+import { getDemoLeads, saveDemoLead } from "@/lib/demo-store";
+
 export type LeadNotificationPayload = {
   type: "Quick Lead" | "Instant Estimation";
   mode: string;
@@ -11,16 +13,47 @@ export type LeadNotificationPayload = {
   estimate?: number;
 };
 
-export async function notifyLead(payload: LeadNotificationPayload) {
+export type StoredLead = LeadNotificationPayload & {
+  id: string;
+  createdAt: string;
+};
+
+export async function submitLead(payload: LeadNotificationPayload) {
   try {
-    await fetch("/api/lead-notifications", {
+    const response = await fetch("/api/lead-notifications", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
+
+    if (!response.ok) {
+      throw new Error("Lead persistence failed");
+    }
   } catch {
-    // Keep lead capture resilient even if Telegram is not configured yet.
+    saveDemoLead(payload);
+  } finally {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("lux-demo-leads-updated"));
+    }
+  }
+}
+
+export async function fetchStoredLeads() {
+  try {
+    const response = await fetch("/api/lead-notifications", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error("Lead fetch failed");
+    }
+
+    const data = (await response.json()) as { leads?: StoredLead[] };
+    return Array.isArray(data.leads) ? data.leads : [];
+  } catch {
+    return getDemoLeads();
   }
 }

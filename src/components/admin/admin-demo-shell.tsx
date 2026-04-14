@@ -7,13 +7,13 @@ import {
   DemoLead,
   DemoThemeSettings,
   getDemoAdminAuth,
-  getDemoLeads,
   getDemoLogo,
   getDemoTheme,
   saveDemoLogo,
   saveDemoTheme,
   setDemoAdminAuth,
 } from "@/lib/demo-store";
+import { fetchStoredLeads } from "@/lib/lead-notifications";
 
 type SidebarView = "branding" | "leads";
 type LeadTab = "Quick Lead" | "Instant Estimation";
@@ -56,18 +56,9 @@ export function AdminDemoShell() {
   );
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setIsAuthed(getDemoAdminAuth());
-      setLeads(getDemoLeads());
-
-      const nextTheme = getDemoTheme();
-      setTheme(nextTheme);
-      setThemeDraft(nextTheme);
-      setIsHydrated(true);
-    });
-
-    function syncLeads() {
-      setLeads(getDemoLeads());
+    async function syncLeads() {
+      const nextLeads = await fetchStoredLeads();
+      setLeads(nextLeads);
     }
 
     function syncTheme() {
@@ -82,6 +73,16 @@ export function AdminDemoShell() {
       setLogoDraft(nextLogo);
     }
 
+    const frame = window.requestAnimationFrame(() => {
+      setIsAuthed(getDemoAdminAuth());
+
+      const nextTheme = getDemoTheme();
+      setTheme(nextTheme);
+      setThemeDraft(nextTheme);
+      setIsHydrated(true);
+    });
+
+    void syncLeads();
     void syncLogo();
     window.addEventListener("storage", syncLeads);
     window.addEventListener("lux-demo-leads-updated", syncLeads);

@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { saveDemoLead } from "@/lib/demo-store";
-import { notifyLead } from "@/lib/lead-notifications";
+import { submitLead } from "@/lib/lead-notifications";
 
 export type IntakeMode = "Remodel" | "Design" | "Build";
 
@@ -68,8 +67,7 @@ export function ProjectIntakeForm({
       phone: phone.trim(),
     } as const;
 
-    saveDemoLead(nextLead);
-    await notifyLead(nextLead);
+    await submitLead(nextLead);
     setIsSubmitted(true);
   }
 

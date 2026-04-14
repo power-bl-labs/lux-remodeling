@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { saveDemoLead } from "@/lib/demo-store";
-import { notifyLead } from "@/lib/lead-notifications";
+import { submitLead } from "@/lib/lead-notifications";
 
 const serviceOptions = [
   { value: "Kitchen Remodeling", base: 18000 },
@@ -80,8 +79,7 @@ export function InstantEstimationForm() {
       estimate,
     } as const;
 
-    saveDemoLead(nextLead);
-    await notifyLead(nextLead);
+    await submitLead(nextLead);
 
     setSubmitted(true);
   }
