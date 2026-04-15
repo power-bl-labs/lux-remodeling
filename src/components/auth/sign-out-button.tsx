@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function SignOutButton() {
-  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
   return (
@@ -16,8 +14,7 @@ export function SignOutButton() {
         await fetch("/api/auth/emergency-logout", {
           method: "POST",
         }).catch(() => null);
-        router.push("/");
-        router.refresh();
+        window.location.assign("/");
       }}
       type="button"
     >

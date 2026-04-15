@@ -1,23 +1,24 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 type SignInFormProps = {
   callbackUrl: string;
 };
 
 export function SignInForm({ callbackUrl }: SignInFormProps) {
-  const router = useRouter();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setIsPending(true);
     setError(null);
 
+    const formData = new FormData(event.currentTarget);
     const nextLogin = String(formData.get("login") ?? "").trim().toLowerCase();
     const nextPassword = String(formData.get("password") ?? "");
 
@@ -50,12 +51,11 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
       return;
     }
 
-    router.push(data.redirectUrl ?? callbackUrl);
-    router.refresh();
+    window.location.assign(data.redirectUrl ?? callbackUrl);
   }
 
   return (
-    <form action={handleSubmit} className="mt-8 grid gap-4">
+    <form className="mt-8 grid gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-2">
         <label className="text-sm font-medium text-[#344054]" htmlFor="login">
           Login
