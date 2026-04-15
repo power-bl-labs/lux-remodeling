@@ -19,10 +19,10 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             Admin Demo
           </p>
           <h1 className="mt-4 max-w-[620px] text-[42px] leading-[0.95] font-semibold tracking-[-0.06em] text-white sm:text-[56px]">
-            The Old Admin UI, Now Backed By Real Login And Live Data.
+            The Old Admin UI, With A Simple Direct Login Again.
           </h1>
           <p className="mt-5 max-w-[620px] text-[17px] leading-8 text-white/72">
-            Sign in with the real manager account, then land in the familiar
+            Use the temporary direct admin credentials, then land in the familiar
             Vercel-like admin experience for leads, branding, and follow-up work.
           </p>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -44,24 +44,18 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <section className="rounded-[12px] border border-[#e4e7ec] bg-white p-8 text-[#14162b] shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:p-10">
           <div className="max-w-[520px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#6b7280]">
-              Secure Sign In
+              Direct Sign In
             </p>
             <h2 className="mt-4 text-[32px] leading-[1] font-semibold tracking-[-0.05em]">
-              Enter The Real Admin
+              Enter The Admin Panel
             </h2>
             <p className="mt-4 text-[16px] leading-7 text-[#667085]">
-              This screen uses Auth.js credentials backed by the Prisma user table.
-              After login, you will go straight into the old admin-demo interface.
+              This temporary screen uses a direct admin cookie instead of the broken auth flow.
+              Login: <span className="font-semibold text-[#14162b]">admin</span>. Password: <span className="font-semibold text-[#14162b]">admin13</span>.
             </p>
 
             <div className="mt-8">
               <SignInForm callbackUrl={callbackUrl} />
-            </div>
-
-            <div className="mt-4">
-              <Link className="text-[14px] font-medium text-[#667085] underline-offset-4 hover:underline" href="/forgot-password">
-                Forgot your password?
-              </Link>
             </div>
 
             <div className="mt-8 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] p-5 text-[14px] leading-7 text-[#667085]">

@@ -3,13 +3,14 @@ import { z } from "zod";
 import {
   createEmergencyAdminCookieValue,
   EMERGENCY_ADMIN_COOKIE_NAME,
+  getEmergencyAdminEmail,
   getEmergencyAdminCookieOptions,
-  matchesSeedAdminCredentials,
+  matchesSimpleAdminCredentials,
 } from "@/lib/emergency-admin";
 
 const schema = z.object({
-  email: z.email().trim().toLowerCase(),
-  password: z.string().min(8),
+  identifier: z.string().trim().min(2).toLowerCase(),
+  password: z.string().min(6),
   callbackUrl: z.string().trim().optional(),
 });
 
@@ -30,11 +31,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 400 });
     }
 
-    if (!matchesSeedAdminCredentials(parsed.data.email, parsed.data.password)) {
+    if (!matchesSimpleAdminCredentials(parsed.data.identifier, parsed.data.password)) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
     }
 
-    const cookieValue = createEmergencyAdminCookieValue(parsed.data.email);
+    const cookieValue = createEmergencyAdminCookieValue(
+      getEmergencyAdminEmail(parsed.data.identifier),
+    );
     const [, expiresAtRaw] = cookieValue.split(".");
     const expiresAt = Number(expiresAtRaw);
     const response = NextResponse.json({

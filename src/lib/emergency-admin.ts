@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const EMERGENCY_ADMIN_COOKIE_NAME = "lux_admin_emergency";
+export const SIMPLE_ADMIN_LOGIN = "admin";
+export const SIMPLE_ADMIN_PASSWORD = "admin13";
 
 const EMERGENCY_ADMIN_TTL_MS = 1000 * 60 * 60 * 12;
 
@@ -27,8 +29,23 @@ function signEmergencyPayload(payload: string) {
     .digest("base64url");
 }
 
+function getSeedAdminEmail() {
+  return process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+}
+
+export function getEmergencyAdminEmail(identifier?: string) {
+  const normalizedIdentifier = identifier?.trim().toLowerCase();
+  const seedEmail = getSeedAdminEmail();
+
+  if (normalizedIdentifier === SIMPLE_ADMIN_LOGIN) {
+    return seedEmail ?? "admin@luxremodeling.com";
+  }
+
+  return seedEmail ?? "admin@luxremodeling.com";
+}
+
 export function matchesSeedAdminCredentials(email: string, password: string) {
-  const seedEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const seedEmail = getSeedAdminEmail();
   const seedPassword = process.env.SEED_ADMIN_PASSWORD;
 
   if (!seedEmail || !seedPassword) {
@@ -36,6 +53,16 @@ export function matchesSeedAdminCredentials(email: string, password: string) {
   }
 
   return email === seedEmail && password === seedPassword;
+}
+
+export function matchesSimpleAdminCredentials(identifier: string, password: string) {
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+
+  if (normalizedIdentifier === SIMPLE_ADMIN_LOGIN && password === SIMPLE_ADMIN_PASSWORD) {
+    return true;
+  }
+
+  return matchesSeedAdminCredentials(normalizedIdentifier, password);
 }
 
 export function createEmergencyAdminCookieValue(email: string) {
@@ -65,14 +92,19 @@ export function readEmergencyAdminCookieValue(value: string | null | undefined) 
 
   const payload = `${email}.${expiresAtRaw}`;
   const expectedSignature = signEmergencyPayload(payload);
+  const signatureBuffer = Buffer.from(signature);
+  const expectedSignatureBuffer = Buffer.from(expectedSignature);
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+  if (
+    signatureBuffer.length !== expectedSignatureBuffer.length ||
+    !crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
+  ) {
     return null;
   }
 
-  const seedEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+  const seedEmail = getSeedAdminEmail() ?? "admin@luxremodeling.com";
 
-  if (!seedEmail || email !== seedEmail) {
+  if (email !== seedEmail) {
     return null;
   }
 
