@@ -43,13 +43,9 @@ async function syncLeadToGoogleSheets(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(webhookSecret
-        ? {
-            "X-Lux-Webhook-Secret": webhookSecret,
-          }
-        : {}),
     },
     body: JSON.stringify({
+      webhookSecret: webhookSecret ?? "",
       leadId: lead.id,
       receivedAt: lead.createdAt,
       status: "New",
