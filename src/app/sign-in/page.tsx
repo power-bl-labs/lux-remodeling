@@ -1,15 +1,19 @@
 import Link from "next/link";
+import { directAdminSignInAction } from "@/app/sign-in/actions";
 import { SignInForm } from "@/components/auth/sign-in-form";
 
 type SignInPageProps = {
   searchParams: Promise<{
     callbackUrl?: string;
+    error?: string;
   }>;
 };
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const params = await searchParams;
   const callbackUrl = params.callbackUrl ?? "/admin-demo";
+  const error =
+    params.error === "invalid" ? "Invalid login or password." : null;
 
   return (
     <main className="min-h-screen bg-[#0c0f17] px-4 py-8 text-white sm:px-6 lg:px-8">
@@ -55,7 +59,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
 
             <div className="mt-8">
-              <SignInForm callbackUrl={callbackUrl} />
+              <SignInForm action={directAdminSignInAction} callbackUrl={callbackUrl} error={error} />
             </div>
 
             <div className="mt-8 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] p-5 text-[14px] leading-7 text-[#667085]">
