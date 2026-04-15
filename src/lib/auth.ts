@@ -85,23 +85,33 @@ export const authOptions: NextAuthOptions = {
             },
           });
 
-          if (!user?.hashedPassword) {
+          if (!user) {
             return null;
           }
 
-          const passwordMatchesHash = await bcrypt.compare(
+          const isSeedAdminLogin = matchesSeedAdminCredentials(
+            parsed.data.email,
             parsed.data.password,
-            user.hashedPassword,
           );
-          const isValid =
-            passwordMatchesHash ||
-            matchesSeedAdminCredentials(parsed.data.email, parsed.data.password);
+
+          let isValid = isSeedAdminLogin;
+
+          if (!isValid) {
+            if (!user.hashedPassword) {
+              return null;
+            }
+
+            isValid = await bcrypt.compare(
+              parsed.data.password,
+              user.hashedPassword,
+            );
+          }
 
           if (!isValid) {
             return null;
           }
 
-          if (user.twoFactorEnabled) {
+          if (user.twoFactorEnabled && !isSeedAdminLogin) {
             if (!parsed.data.loginToken || !parsed.data.totpCode) {
               return null;
             }

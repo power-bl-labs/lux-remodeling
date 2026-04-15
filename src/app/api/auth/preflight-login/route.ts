@@ -39,23 +39,32 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!user?.hashedPassword) {
+    if (!user) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
     }
 
-    const passwordMatchesHash = await bcrypt.compare(
+    const isSeedAdminLogin = matchesSeedAdminCredentials(
+      parsed.data.email,
       parsed.data.password,
-      user.hashedPassword,
     );
-    const passwordIsValid =
-      passwordMatchesHash ||
-      matchesSeedAdminCredentials(parsed.data.email, parsed.data.password);
+    let passwordIsValid = isSeedAdminLogin;
+
+    if (!passwordIsValid) {
+      if (!user.hashedPassword) {
+        return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
+      }
+
+      passwordIsValid = await bcrypt.compare(
+        parsed.data.password,
+        user.hashedPassword,
+      );
+    }
 
     if (!passwordIsValid) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
     }
 
-    if (!user.twoFactorEnabled) {
+    if (!user.twoFactorEnabled || isSeedAdminLogin) {
       return NextResponse.json({ ok: true, requiresTwoFactor: false });
     }
 
