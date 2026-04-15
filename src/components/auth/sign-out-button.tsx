@@ -13,6 +13,10 @@ export function SignOutButton() {
       onClick={() => {
         setIsPending(true);
         startTransition(async () => {
+          await fetch("/api/auth/emergency-logout", {
+            method: "POST",
+          }).catch(() => null);
+
           await signOut({
             callbackUrl: "/",
           });

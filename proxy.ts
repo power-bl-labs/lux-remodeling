@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { EMERGENCY_ADMIN_COOKIE_NAME, readEmergencyAdminCookieValue } from "@/lib/emergency-admin";
 
 export async function proxy(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
+  const isAdminPath =
+    request.nextUrl.pathname.startsWith("/admin") ||
+    request.nextUrl.pathname.startsWith("/admin-demo");
+
+  if (!isAdminPath) {
     return NextResponse.next();
   }
 
@@ -13,6 +18,12 @@ export async function proxy(request: NextRequest) {
   });
 
   if (token) {
+    return NextResponse.next();
+  }
+
+  const emergencyCookie = request.cookies.get(EMERGENCY_ADMIN_COOKIE_NAME)?.value;
+
+  if (readEmergencyAdminCookieValue(emergencyCookie)) {
     return NextResponse.next();
   }
 

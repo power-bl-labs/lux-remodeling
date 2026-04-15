@@ -40,12 +40,44 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
 
     startTransition(() => {
       if (result?.error) {
-        setError(
-          nextTwoFactorCode
-            ? "The verification code is invalid or expired."
-            : "Sign in failed. Check the seeded admin credentials and database connection.",
-        );
-        setIsPending(false);
+        if (nextTwoFactorCode) {
+          setError("The verification code is invalid or expired.");
+          setIsPending(false);
+          return;
+        }
+
+        void (async () => {
+          const emergencyResponse = await fetch("/api/auth/emergency-login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: nextEmail,
+              password: nextPassword,
+              callbackUrl,
+            }),
+          });
+
+          const emergencyData = (await emergencyResponse.json().catch(() => null)) as
+            | {
+                ok?: boolean;
+                redirectUrl?: string;
+                error?: string;
+              }
+            | null;
+
+          startTransition(() => {
+            if (!emergencyResponse.ok || !emergencyData?.ok) {
+              setError("Sign in failed. Check the seeded admin credentials and database connection.");
+              setIsPending(false);
+              return;
+            }
+
+            router.push(emergencyData.redirectUrl ?? callbackUrl);
+            router.refresh();
+          });
+        })();
         return;
       }
 

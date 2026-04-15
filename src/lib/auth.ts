@@ -6,6 +6,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import {
+  getEmergencyAdminSession,
+  matchesSeedAdminCredentials,
+} from "@/lib/emergency-admin";
 import { prisma } from "@/lib/prisma";
 import {
   consumeRecoveryCode,
@@ -20,17 +24,6 @@ const credentialsSchema = z.object({
   totpCode: z.string().trim().min(6).optional(),
   loginToken: z.string().trim().min(20).optional(),
 });
-
-function matchesSeedAdminCredentials(email: string, password: string) {
-  const seedEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
-  const seedPassword = process.env.SEED_ADMIN_PASSWORD;
-
-  if (!seedEmail || !seedPassword) {
-    return false;
-  }
-
-  return email === seedEmail && password === seedPassword;
-}
 
 declare module "next-auth" {
   interface Session {
@@ -209,7 +202,13 @@ export const authOptions: NextAuthOptions = {
 };
 
 export async function auth() {
-  return getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
+
+  if (session?.user) {
+    return session;
+  }
+
+  return getEmergencyAdminSession();
 }
 
 export async function requireAuth() {

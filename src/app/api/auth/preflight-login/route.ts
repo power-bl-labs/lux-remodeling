@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { matchesSeedAdminCredentials } from "@/lib/emergency-admin";
 import { prisma } from "@/lib/prisma";
 import {
   createRandomToken,
@@ -12,17 +13,6 @@ const schema = z.object({
   email: z.email().trim().toLowerCase(),
   password: z.string().min(8),
 });
-
-function matchesSeedAdminCredentials(email: string, password: string) {
-  const seedEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
-  const seedPassword = process.env.SEED_ADMIN_PASSWORD;
-
-  if (!seedEmail || !seedPassword) {
-    return false;
-  }
-
-  return email === seedEmail && password === seedPassword;
-}
 
 export async function POST(request: Request) {
   try {
