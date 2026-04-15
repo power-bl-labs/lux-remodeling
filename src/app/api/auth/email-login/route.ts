@@ -16,6 +16,16 @@ function sanitizeCallbackUrl(value: string | null | undefined) {
   return value;
 }
 
+function getPublicBaseUrl(request: Request) {
+  const configuredBaseUrl = process.env.NEXTAUTH_URL?.trim();
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
+  }
+
+  return request.url;
+}
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -47,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   if (!authenticatedEmail) {
-    const redirectUrl = new URL("/sign-in", request.url);
+    const redirectUrl = new URL("/sign-in", getPublicBaseUrl(request));
     redirectUrl.searchParams.set("error", "invalid");
     redirectUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(redirectUrl, { status: 303 });
@@ -55,7 +65,7 @@ export async function POST(request: Request) {
 
   const cookieValue = createEmergencyAdminCookieValue(authenticatedEmail);
   const [, expiresAtRaw] = cookieValue.split(".");
-  const redirectUrl = new URL(callbackUrl, request.url);
+  const redirectUrl = new URL(callbackUrl, getPublicBaseUrl(request));
   const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
   response.cookies.set(
