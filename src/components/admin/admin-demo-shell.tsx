@@ -4,6 +4,7 @@ import type { ChangeEvent } from "react";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { AdminSecurityPanel } from "@/components/admin/admin-security-panel";
 import { DemoLead } from "@/lib/demo-store";
 import {
   defaultBrandTheme,
@@ -360,25 +361,7 @@ export function AdminDemoShell({
                 ) : null}
               </div>
 
-              <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
-                <h3 className="text-[24px] leading-[1] font-semibold tracking-[-0.04em] text-[var(--brand-dark)]">
-                  Security
-                </h3>
-                <p className="mt-3 text-[15px] leading-7 text-[#667085]">
-                  This panel keeps the old admin-demo look, but access is now protected by the
-                  real server-side manager session.
-                </p>
-
-                <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
-                  Signed in as <span className="font-semibold text-[#14162b]">{userEmail}</span>
-                </div>
-                <div className="mt-3 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
-                  Role <span className="font-semibold uppercase text-[#14162b]">{userRole}</span>
-                </div>
-                <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] leading-7 text-[#667085]">
-                  Use the sign-out button in the sidebar to leave this protected admin session.
-                </div>
-              </div>
+              <AdminSecurityPanel userEmail={userEmail} userRole={userRole} />
 
               <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
                 <h3 className="text-[24px] leading-[1] font-semibold tracking-[-0.04em] text-[var(--brand-dark)]">

@@ -37,11 +37,15 @@ model User {
   image          String?
   hashedPassword String?
   role           UserRole    @default(MANAGER)
+  twoFactorEnabled Boolean   @default(false)
+  twoFactorSecret  String?   @db.Text
+  twoFactorRecoveryCodes String? @db.LongText
   accounts       Account[]
   sessions       Session[]
   assignedLeads  Lead[]      @relation("AssignedManager")
   leadNotes      LeadNote[]
   leadActivities LeadActivity[]
+  passwordResetTokens PasswordResetToken[]
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 }
@@ -139,4 +143,28 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model TwoFactorLoginToken {
+  id             String   @id @default(cuid())
+  email          String
+  tokenHash      String   @unique @db.VarChar(191)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(191)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

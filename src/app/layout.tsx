@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { defaultSiteBranding } from "@/lib/brand-theme";
 import { DemoThemeSync } from "@/components/demo-theme-sync";
 import { getStoredSiteBranding } from "@/lib/server-site-branding";
@@ -38,6 +39,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await connection();
   const themeStyle = await getInitialThemeStyle();
 
   return (
