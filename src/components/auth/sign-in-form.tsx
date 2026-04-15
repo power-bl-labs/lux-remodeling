@@ -1,12 +1,12 @@
 type SignInFormProps = {
   callbackUrl: string;
   error?: string | null;
-  action: (formData: FormData) => void | Promise<void>;
+  actionUrl: string;
 };
 
-export function SignInForm({ callbackUrl, error, action }: SignInFormProps) {
+export function SignInForm({ callbackUrl, error, actionUrl }: SignInFormProps) {
   return (
-    <form action={action} className="mt-8 grid gap-4">
+    <form action={actionUrl} className="mt-8 grid gap-4" method="post">
       <input name="callbackUrl" type="hidden" value={callbackUrl} />
       <div className="grid gap-2">
         <label className="text-sm font-medium text-[#344054]" htmlFor="email">

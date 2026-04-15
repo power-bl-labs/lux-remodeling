@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { directAdminSignInAction } from "@/app/sign-in/actions";
 import { SignInForm } from "@/components/auth/sign-in-form";
 
 type SignInPageProps = {
@@ -57,7 +56,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             </p>
 
             <div className="mt-8">
-              <SignInForm action={directAdminSignInAction} callbackUrl={callbackUrl} error={error} />
+              <SignInForm actionUrl="/api/auth/email-login" callbackUrl={callbackUrl} error={error} />
             </div>
 
             <div className="mt-4">
