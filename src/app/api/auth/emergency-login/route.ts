@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import {
   createEmergencyAdminCookieValue,
   EMERGENCY_ADMIN_COOKIE_NAME,
   getEmergencyAdminEmail,
   getEmergencyAdminCookieOptions,
-  matchesSimpleAdminCredentials,
+  matchesSeedAdminCredentials,
 } from "@/lib/emergency-admin";
+import { prisma } from "@/lib/prisma";
 
 const schema = z.object({
-  identifier: z.string().trim().min(2).toLowerCase(),
-  password: z.string().min(6),
+  identifier: z.email().trim().toLowerCase(),
+  password: z.string().min(8),
   callbackUrl: z.string().trim().optional(),
 });
 
@@ -31,12 +33,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 400 });
     }
 
-    if (!matchesSimpleAdminCredentials(parsed.data.identifier, parsed.data.password)) {
+    let authenticatedEmail: string | null = null;
+
+    if (matchesSeedAdminCredentials(parsed.data.identifier, parsed.data.password)) {
+      authenticatedEmail = getEmergencyAdminEmail(parsed.data.identifier);
+    } else {
+      const user = await prisma.user.findUnique({
+        where: {
+          email: parsed.data.identifier,
+        },
+        select: {
+          email: true,
+          hashedPassword: true,
+        },
+      });
+
+      if (user?.hashedPassword) {
+        const isValid = await bcrypt.compare(parsed.data.password, user.hashedPassword);
+
+        if (isValid) {
+          authenticatedEmail = user.email;
+        }
+      }
+    }
+
+    if (!authenticatedEmail) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
     }
 
     const cookieValue = createEmergencyAdminCookieValue(
-      getEmergencyAdminEmail(parsed.data.identifier),
+      authenticatedEmail,
     );
     const [, expiresAtRaw] = cookieValue.split(".");
     const expiresAt = Number(expiresAtRaw);

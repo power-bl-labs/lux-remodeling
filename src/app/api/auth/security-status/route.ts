@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isMailConfigured } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
-import { countRecoveryCodes } from "@/lib/security";
 
 export async function GET() {
   try {
@@ -19,8 +18,6 @@ export async function GET() {
       select: {
         email: true,
         role: true,
-        twoFactorEnabled: true,
-        twoFactorRecoveryCodes: true,
       },
     });
 
@@ -33,8 +30,6 @@ export async function GET() {
       security: {
         email: user.email,
         role: user.role,
-        twoFactorEnabled: user.twoFactorEnabled,
-        recoveryCodesRemaining: countRecoveryCodes(user.twoFactorRecoveryCodes),
         resetEmailConfigured: isMailConfigured(),
       },
     });

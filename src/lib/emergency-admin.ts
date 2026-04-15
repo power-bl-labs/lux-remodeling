@@ -5,8 +5,6 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const EMERGENCY_ADMIN_COOKIE_NAME = "lux_admin_emergency";
-export const SIMPLE_ADMIN_LOGIN = "admin";
-export const SIMPLE_ADMIN_PASSWORD = "admin13";
 
 const EMERGENCY_ADMIN_TTL_MS = 1000 * 60 * 60 * 12;
 
@@ -35,13 +33,7 @@ function getSeedAdminEmail() {
 
 export function getEmergencyAdminEmail(identifier?: string) {
   const normalizedIdentifier = identifier?.trim().toLowerCase();
-  const seedEmail = getSeedAdminEmail();
-
-  if (normalizedIdentifier === SIMPLE_ADMIN_LOGIN) {
-    return seedEmail ?? "admin@luxremodeling.com";
-  }
-
-  return seedEmail ?? "admin@luxremodeling.com";
+  return normalizedIdentifier || getSeedAdminEmail() || "admin@luxremodeling.com";
 }
 
 export function matchesSeedAdminCredentials(email: string, password: string) {
@@ -53,16 +45,6 @@ export function matchesSeedAdminCredentials(email: string, password: string) {
   }
 
   return email === seedEmail && password === seedPassword;
-}
-
-export function matchesSimpleAdminCredentials(identifier: string, password: string) {
-  const normalizedIdentifier = identifier.trim().toLowerCase();
-
-  if (normalizedIdentifier === SIMPLE_ADMIN_LOGIN && password === SIMPLE_ADMIN_PASSWORD) {
-    return true;
-  }
-
-  return matchesSeedAdminCredentials(normalizedIdentifier, password);
 }
 
 export function createEmergencyAdminCookieValue(email: string) {
@@ -99,12 +81,6 @@ export function readEmergencyAdminCookieValue(value: string | null | undefined) 
     signatureBuffer.length !== expectedSignatureBuffer.length ||
     !crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
   ) {
-    return null;
-  }
-
-  const seedEmail = getSeedAdminEmail() ?? "admin@luxremodeling.com";
-
-  if (email !== seedEmail) {
     return null;
   }
 

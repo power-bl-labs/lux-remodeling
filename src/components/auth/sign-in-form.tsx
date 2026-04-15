@@ -9,17 +9,16 @@ export function SignInForm({ callbackUrl, error, action }: SignInFormProps) {
     <form action={action} className="mt-8 grid gap-4">
       <input name="callbackUrl" type="hidden" value={callbackUrl} />
       <div className="grid gap-2">
-        <label className="text-sm font-medium text-[#344054]" htmlFor="login">
-          Login
+        <label className="text-sm font-medium text-[#344054]" htmlFor="email">
+          Email
         </label>
         <input
           required
           className="h-12 rounded-[10px] border border-[#d0d5dd] bg-[#f8fafc] px-4 text-[15px] font-medium outline-none transition focus:border-[var(--brand-blue)]"
-          id="login"
-          name="login"
-          type="text"
-          defaultValue="admin"
-          placeholder="admin"
+          id="email"
+          name="email"
+          type="email"
+          placeholder="admin@luxremodeling.com"
         />
       </div>
       <div className="grid gap-2">
@@ -32,7 +31,7 @@ export function SignInForm({ callbackUrl, error, action }: SignInFormProps) {
           id="password"
           name="password"
           type="password"
-          placeholder="admin13"
+          placeholder="Minimum 8 characters"
         />
       </div>
 

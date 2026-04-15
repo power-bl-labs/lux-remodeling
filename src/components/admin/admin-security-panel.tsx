@@ -5,15 +5,7 @@ import { useEffect, useState } from "react";
 type SecurityStatus = {
   email: string;
   role: string;
-  twoFactorEnabled: boolean;
-  recoveryCodesRemaining: number;
   resetEmailConfigured: boolean;
-};
-
-type SetupState = {
-  secret: string;
-  qrCodeDataUrl: string;
-  otpauthUrl: string;
 };
 
 type AdminSecurityPanelProps = {
@@ -52,16 +44,11 @@ export function AdminSecurityPanel({
   userRole,
 }: AdminSecurityPanelProps) {
   const [status, setStatus] = useState<SecurityStatus | null>(null);
-  const [setup, setSetup] = useState<SetupState | null>(null);
-  const [setupCode, setSetupCode] = useState("");
-  const [disablePassword, setDisablePassword] = useState("");
-  const [disableCode, setDisableCode] = useState("");
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
@@ -87,69 +74,6 @@ export function AdminSecurityPanel({
       setError(nextError instanceof Error ? nextError.message : "Unknown error");
     });
   }, []);
-
-  async function beginTwoFactorSetup() {
-    try {
-      setIsBusy(true);
-      setError(null);
-      setFeedback(null);
-      setRecoveryCodes([]);
-
-      const data = await postJson<{ setup: SetupState }>("/api/auth/2fa/setup");
-      setSetup(data.setup);
-      setFeedback("Scan the QR code, then confirm with a code from your authenticator app.");
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unknown error");
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  async function confirmTwoFactorSetup() {
-    try {
-      setIsBusy(true);
-      setError(null);
-      setFeedback(null);
-
-      const data = await postJson<{ recoveryCodes: string[] }>("/api/auth/2fa/confirm", {
-        code: setupCode,
-      });
-
-      setRecoveryCodes(data.recoveryCodes);
-      setSetup(null);
-      setSetupCode("");
-      setFeedback("Two-factor authentication is now enabled.");
-      await loadStatus();
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unknown error");
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  async function disableTwoFactor() {
-    try {
-      setIsBusy(true);
-      setError(null);
-      setFeedback(null);
-
-      await postJson("/api/auth/2fa/disable", {
-        currentPassword: disablePassword,
-        code: disableCode,
-      });
-
-      setDisablePassword("");
-      setDisableCode("");
-      setSetup(null);
-      setRecoveryCodes([]);
-      setFeedback("Two-factor authentication was disabled.");
-      await loadStatus();
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unknown error");
-    } finally {
-      setIsBusy(false);
-    }
-  }
 
   async function changePassword() {
     try {
@@ -194,7 +118,7 @@ export function AdminSecurityPanel({
         Security
       </h3>
       <p className="mt-3 text-[15px] leading-7 text-[#667085]">
-        Manage password access, reset links, and authenticator-app 2FA for the live admin account.
+        Manage password access and reset links for the live admin account.
       </p>
 
       <div className="mt-5 grid gap-3">
@@ -205,113 +129,11 @@ export function AdminSecurityPanel({
           Role <span className="font-semibold uppercase text-[#14162b]">{userRole}</span>
         </div>
         <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
-          2FA status{" "}
-          <span className="font-semibold text-[#14162b]">
-            {status?.twoFactorEnabled ? "Enabled" : "Disabled"}
-          </span>
-          {status?.twoFactorEnabled ? (
-            <span className="ml-2 text-[#98a2b3]">
-              ({status.recoveryCodesRemaining} recovery codes left)
-            </span>
-          ) : null}
+          Login mode <span className="font-semibold text-[#14162b]">Email and password</span>
         </div>
       </div>
 
       <div className="mt-6 grid gap-4">
-        {!status?.twoFactorEnabled ? (
-          <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] p-4">
-            <p className="text-[14px] font-semibold text-[#344054]">Two-Factor Authentication</p>
-            {!setup ? (
-              <button
-                className="mt-4 inline-flex h-11 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-4 text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isBusy}
-                onClick={() => void beginTwoFactorSetup()}
-                type="button"
-              >
-                Set Up Authenticator App
-              </button>
-            ) : (
-              <div className="mt-4 grid gap-4">
-                <div className="flex justify-center rounded-[10px] border border-[#d0d5dd] bg-white p-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img alt="2FA QR code" className="h-[220px] w-[220px]" src={setup.qrCodeDataUrl} />
-                </div>
-                <div className="rounded-[10px] border border-[#d0d5dd] bg-white px-4 py-4 text-[13px] leading-6 text-[#667085]">
-                  Manual setup key: <span className="font-semibold text-[#14162b]">{setup.secret}</span>
-                </div>
-                <label className="grid gap-2">
-                  <span className="text-[14px] font-semibold text-[#344054]">Confirm 6-digit code</span>
-                  <input
-                    className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
-                    onChange={(event) => setSetupCode(event.target.value)}
-                    type="text"
-                    value={setupCode}
-                    placeholder="123456"
-                  />
-                </label>
-                <button
-                  className="inline-flex h-11 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-4 text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  disabled={isBusy || setupCode.trim().length < 6}
-                  onClick={() => void confirmTwoFactorSetup()}
-                  type="button"
-                >
-                  Confirm And Enable 2FA
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] p-4">
-            <p className="text-[14px] font-semibold text-[#344054]">Disable 2FA</p>
-            <p className="mt-2 text-[14px] leading-6 text-[#667085]">
-              Enter your current password and a current authenticator code or recovery code.
-            </p>
-            <div className="mt-4 grid gap-3">
-              <input
-                className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
-                onChange={(event) => setDisablePassword(event.target.value)}
-                type="password"
-                value={disablePassword}
-                placeholder="Current password"
-              />
-              <input
-                className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
-                onChange={(event) => setDisableCode(event.target.value)}
-                type="text"
-                value={disableCode}
-                placeholder="Authenticator code or recovery code"
-              />
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white px-4 text-[14px] font-semibold text-[#344054] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isBusy || disablePassword.length < 8 || disableCode.trim().length < 6}
-                onClick={() => void disableTwoFactor()}
-                type="button"
-              >
-                Disable Two-Factor Authentication
-              </button>
-            </div>
-          </div>
-        )}
-
-        {recoveryCodes.length > 0 ? (
-          <div className="rounded-[10px] border border-[#eaecf0] bg-[#fffbea] p-4">
-            <p className="text-[14px] font-semibold text-[#8a6b00]">Recovery Codes</p>
-            <p className="mt-2 text-[14px] leading-6 text-[#7a6430]">
-              Save these codes somewhere safe. Each code works once if your authenticator device is unavailable.
-            </p>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {recoveryCodes.map((code) => (
-                <div
-                  key={code}
-                  className="rounded-[8px] border border-[#eadcb2] bg-white px-3 py-3 font-mono text-[14px] font-semibold text-[#5f4d1d]"
-                >
-                  {code}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
         <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] p-4">
           <p className="text-[14px] font-semibold text-[#344054]">Change Password</p>
           <div className="mt-4 grid gap-3">

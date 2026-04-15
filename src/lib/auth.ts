@@ -11,18 +11,10 @@ import {
   matchesSeedAdminCredentials,
 } from "@/lib/emergency-admin";
 import { prisma } from "@/lib/prisma";
-import {
-  consumeRecoveryCode,
-  decryptSecret,
-  hashToken,
-  verifyTotpToken,
-} from "@/lib/security";
 
 const credentialsSchema = z.object({
   email: z.email().trim().toLowerCase(),
   password: z.string().min(8),
-  totpCode: z.string().trim().min(6).optional(),
-  loginToken: z.string().trim().min(20).optional(),
 });
 
 declare module "next-auth" {
@@ -102,71 +94,6 @@ export const authOptions: NextAuthOptions = {
 
           if (!isValid) {
             return null;
-          }
-
-          if (user.twoFactorEnabled && !isSeedAdminLogin) {
-            if (!parsed.data.loginToken || !parsed.data.totpCode) {
-              return null;
-            }
-
-            const loginToken = await prisma.twoFactorLoginToken.findUnique({
-              where: {
-                tokenHash: hashToken(parsed.data.loginToken),
-              },
-            });
-
-            if (
-              !loginToken ||
-              loginToken.email !== user.email ||
-              loginToken.expiresAt < new Date()
-            ) {
-              return null;
-            }
-
-            const twoFactorSecret = user.twoFactorSecret
-              ? decryptSecret(user.twoFactorSecret)
-              : null;
-
-            const isTotpValid = twoFactorSecret
-              ? verifyTotpToken(twoFactorSecret, parsed.data.totpCode)
-              : false;
-
-            let nextRecoveryCodes = user.twoFactorRecoveryCodes;
-            let usedRecoveryCode = false;
-
-            if (!isTotpValid) {
-              const recoveryResult = consumeRecoveryCode(
-                parsed.data.totpCode,
-                user.twoFactorRecoveryCodes,
-              );
-
-              if (!recoveryResult.valid) {
-                return null;
-              }
-
-              nextRecoveryCodes = recoveryResult.nextValue;
-              usedRecoveryCode = true;
-            }
-
-            await prisma.$transaction([
-              prisma.twoFactorLoginToken.delete({
-                where: {
-                  id: loginToken.id,
-                },
-              }),
-              ...(usedRecoveryCode
-                ? [
-                    prisma.user.update({
-                      where: {
-                        id: user.id,
-                      },
-                      data: {
-                        twoFactorRecoveryCodes: nextRecoveryCodes,
-                      },
-                    }),
-                  ]
-                : []),
-            ]);
           }
 
           return {

@@ -3,11 +3,6 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { matchesSeedAdminCredentials } from "@/lib/emergency-admin";
 import { prisma } from "@/lib/prisma";
-import {
-  createRandomToken,
-  getTwoFactorLoginExpiry,
-  hashToken,
-} from "@/lib/security";
 
 const schema = z.object({
   email: z.email().trim().toLowerCase(),
@@ -54,31 +49,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Invalid credentials." }, { status: 401 });
     }
 
-    if (!user.twoFactorEnabled || isSeedAdminLogin) {
-      return NextResponse.json({ ok: true, requiresTwoFactor: false });
-    }
-
-    const loginToken = createRandomToken(24);
-
-    await prisma.$transaction([
-      prisma.twoFactorLoginToken.deleteMany({
-        where: {
-          email: user.email,
-        },
-      }),
-      prisma.twoFactorLoginToken.create({
-        data: {
-          email: user.email,
-          tokenHash: hashToken(loginToken),
-          expiresAt: getTwoFactorLoginExpiry(),
-        },
-      }),
-    ]);
-
     return NextResponse.json({
       ok: true,
-      requiresTwoFactor: true,
-      loginToken,
+      requiresTwoFactor: false,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

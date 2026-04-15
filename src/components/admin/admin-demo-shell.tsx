@@ -3,7 +3,6 @@
 import type { ChangeEvent } from "react";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
 import { AdminSecurityPanel } from "@/components/admin/admin-security-panel";
 import { DemoLead } from "@/lib/demo-store";
 import {
@@ -230,9 +229,10 @@ export function AdminDemoShell({
             onClick={() => {
               setIsSigningOut(true);
               startTransition(async () => {
-                await signOut({
-                  callbackUrl: "/sign-in",
-                });
+                await fetch("/api/auth/emergency-logout", {
+                  method: "POST",
+                }).catch(() => null);
+                window.location.assign("/sign-in");
               });
             }}
             type="button"
