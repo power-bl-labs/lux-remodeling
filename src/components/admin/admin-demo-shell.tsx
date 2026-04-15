@@ -1,15 +1,10 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import {
-  DemoLead,
-  getDemoAdminCredentials,
-  saveDemoAdminPassword,
-  setDemoAdminAuth,
-} from "@/lib/demo-store";
+import { signOut } from "next-auth/react";
+import { DemoLead } from "@/lib/demo-store";
 import {
   defaultBrandTheme,
   type BrandThemeSettings,
@@ -42,8 +37,7 @@ export function AdminDemoShell({
   userRole,
 }: AdminDemoShellProps) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [view, setView] = useState<SidebarView>("leads");
   const [leadTab, setLeadTab] = useState<LeadTab>("Quick Lead");
   const [leads, setLeads] = useState<DemoLead[]>([]);
@@ -54,8 +48,6 @@ export function AdminDemoShell({
   const [logoError, setLogoError] = useState<string | null>(null);
   const [themeSaved, setThemeSaved] = useState(false);
   const [logoSaved, setLogoSaved] = useState(false);
-  const [securityError, setSecurityError] = useState<string | null>(null);
-  const [securitySaved, setSecuritySaved] = useState(false);
 
   const quickLeads = useMemo(
     () => leads.filter((lead) => lead.type === "Quick Lead"),
@@ -88,7 +80,6 @@ export function AdminDemoShell({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      setIsAuthed(true);
       setIsHydrated(true);
     });
 
@@ -120,21 +111,6 @@ export function AdminDemoShell({
         </div>
       </div>
     );
-  }
-
-  function handleLogin(formData: FormData) {
-    const username = String(formData.get("username") ?? "").trim();
-    const password = String(formData.get("password") ?? "").trim();
-    const credentials = getDemoAdminCredentials();
-
-    if (username === credentials.username && password === credentials.password) {
-      setDemoAdminAuth(true);
-      setIsAuthed(true);
-      setLoginError(null);
-      return;
-    }
-
-    setLoginError("Use your saved admin demo password.");
   }
 
   function updateThemeField<K extends keyof BrandThemeSettings>(
@@ -199,123 +175,6 @@ export function AdminDemoShell({
     }
   }
 
-  function handlePasswordSave(formData: FormData) {
-    setSecurityError(null);
-
-    const nextPassword = String(formData.get("nextPassword") ?? "").trim();
-    const confirmPassword = String(formData.get("confirmPassword") ?? "").trim();
-
-    if (nextPassword.length < 8) {
-      setSecurityError("Use at least 8 characters for the admin demo password.");
-      return;
-    }
-
-    if (nextPassword !== confirmPassword) {
-      setSecurityError("The new password and confirmation do not match.");
-      return;
-    }
-
-    saveDemoAdminPassword(nextPassword);
-    setSecuritySaved(true);
-    window.setTimeout(() => setSecuritySaved(false), 1800);
-  }
-
-  if (!isAuthed) {
-    return (
-      <div className="min-h-screen bg-[#0c0f17] px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-[1180px] gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <section className="rounded-[12px] border border-white/10 bg-[linear-gradient(180deg,rgba(51,72,255,0.18),rgba(13,16,24,0.92))] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.36)] sm:p-10">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.24em] text-white/58">
-              Admin Demo
-            </p>
-            <h1 className="mt-4 max-w-[620px] text-[42px] leading-[0.95] font-semibold tracking-[-0.06em] text-white sm:text-[56px]">
-              Vercel-Like Admin UI, Wired To Your Live Local Demo Leads.
-            </h1>
-            <p className="mt-5 max-w-[620px] text-[17px] leading-8 text-white/72">
-              This demo login is local-only. Once inside, you can change site colors, review
-              Quick Leads from the hero form, and call or text each homeowner directly.
-            </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              {[
-                "Change Brand Colors",
-                "Review Quick Leads",
-                "Call Or Text Fast",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[10px] border border-white/10 bg-white/6 px-5 py-5 text-[15px] font-medium text-white/86 backdrop-blur"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[12px] border border-[#e4e7ec] bg-white p-8 text-[#14162b] shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:p-10">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-[#6b7280]">
-              Local Sign In
-            </p>
-            <h2 className="mt-4 text-[32px] leading-[1] font-semibold tracking-[-0.05em]">
-              Enter The Demo Admin
-            </h2>
-            <p className="mt-4 text-[16px] leading-7 text-[#667085]">
-              Use the local demo credentials below. No database setup is required for this screen.
-            </p>
-
-            <form action={handleLogin} className="mt-8 grid gap-4">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-[#344054]" htmlFor="username">
-                  Username
-                </label>
-                <input
-                  defaultValue="admin"
-                  className="h-12 rounded-[10px] border border-[#d0d5dd] bg-[#f8fafc] px-4 text-[15px] font-medium outline-none transition focus:border-[var(--brand-blue)]"
-                  id="username"
-                  name="username"
-                  type="text"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-[#344054]" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  defaultValue="admin"
-                  className="h-12 rounded-[10px] border border-[#d0d5dd] bg-[#f8fafc] px-4 text-[15px] font-medium outline-none transition focus:border-[var(--brand-blue)]"
-                  id="password"
-                  name="password"
-                  type="password"
-                />
-              </div>
-
-              <button
-                className="mt-2 inline-flex h-12 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[15px] font-semibold text-white transition hover:opacity-95"
-                type="submit"
-              >
-                Sign In To Admin Demo
-              </button>
-
-              {loginError ? (
-                <p className="text-sm font-medium text-[#b42318]">{loginError}</p>
-              ) : null}
-            </form>
-
-            <div className="mt-8 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] p-5 text-[14px] leading-7 text-[#667085]">
-              <p>
-                URL: <span className="font-semibold text-[#14162b]">/admin-demo</span>
-              </p>
-              <p>
-                Login: <span className="font-semibold text-[#14162b]">admin</span>
-              </p>
-              <p>
-                Password: <span className="font-semibold text-[#14162b]">admin</span>
-              </p>
-            </div>
-          </section>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-[#14162b]">
@@ -364,13 +223,21 @@ export function AdminDemoShell({
             </button>
           </nav>
 
-          <div className="mt-6 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[13px] leading-6 text-[#475467]">
-            <p className="font-semibold text-[#14162b]">{userEmail}</p>
-            <p className="uppercase tracking-[0.16em] text-[#98a2b3]">{userRole}</p>
-          </div>
-          <div className="mt-4">
-            <SignOutButton />
-          </div>
+          <button
+            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white text-[15px] font-semibold text-[#344054] transition hover:border-[#98a2b3] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isSigningOut}
+            onClick={() => {
+              setIsSigningOut(true);
+              startTransition(async () => {
+                await signOut({
+                  callbackUrl: "/sign-in",
+                });
+              });
+            }}
+            type="button"
+          >
+            {isSigningOut ? "Signing Out..." : "Log Out"}
+          </button>
           <Link
             className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-[6px] bg-[var(--brand-blue)] text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(51,72,255,0.18)] transition hover:-translate-y-0.5 hover:opacity-95"
             href="/"
@@ -498,8 +365,8 @@ export function AdminDemoShell({
                   Security
                 </h3>
                 <p className="mt-3 text-[15px] leading-7 text-[#667085]">
-                  This admin screen now relies on the real manager session instead of the old
-                  browser-only demo password.
+                  This panel keeps the old admin-demo look, but access is now protected by the
+                  real server-side manager session.
                 </p>
 
                 <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
@@ -508,41 +375,9 @@ export function AdminDemoShell({
                 <div className="mt-3 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
                   Role <span className="font-semibold uppercase text-[#14162b]">{userRole}</span>
                 </div>
-
-                <form action={handlePasswordSave} className="mt-5 grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-[14px] font-semibold text-[#344054]">New Password</span>
-                    <input
-                      className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
-                      name="nextPassword"
-                      placeholder="At least 8 characters"
-                      type="password"
-                    />
-                  </label>
-                  <label className="grid gap-2">
-                    <span className="text-[14px] font-semibold text-[#344054]">Confirm Password</span>
-                    <input
-                      className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
-                      name="confirmPassword"
-                      placeholder="Repeat the new password"
-                      type="password"
-                    />
-                  </label>
-
-                  <button
-                    className="inline-flex h-12 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(51,72,255,0.24)] transition hover:-translate-y-0.5 hover:opacity-95"
-                    style={{ color: "#ffffff" }}
-                    type="submit"
-                  >
-                    Save Changes
-                  </button>
-                </form>
-                {securitySaved ? (
-                  <p className="mt-3 text-sm font-semibold text-[#16a34a]">Saved</p>
-                ) : null}
-                {securityError ? (
-                  <p className="mt-3 text-sm font-medium text-[#b42318]">{securityError}</p>
-                ) : null}
+                <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] leading-7 text-[#667085]">
+                  Use the sign-out button in the sidebar to leave this protected admin session.
+                </div>
               </div>
 
               <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">

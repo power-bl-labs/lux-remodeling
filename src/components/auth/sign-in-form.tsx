@@ -40,27 +40,27 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
   }
 
   return (
-    <form action={handleSubmit} className="grid gap-4">
+    <form action={handleSubmit} className="mt-8 grid gap-4">
       <div className="grid gap-2">
-        <label className="text-sm font-medium text-stone-700" htmlFor="email">
+        <label className="text-sm font-medium text-[#344054]" htmlFor="email">
           Email
         </label>
         <input
           required
-          className="rounded-2xl border border-stone-300 bg-white px-4 py-3 outline-none transition focus:border-stone-500"
+          className="h-12 rounded-[10px] border border-[#d0d5dd] bg-[#f8fafc] px-4 text-[15px] font-medium outline-none transition focus:border-[var(--brand-blue)]"
           id="email"
           name="email"
           type="email"
-          placeholder="manager@luxremodeling.com"
+          placeholder="admin@luxremodeling.com"
         />
       </div>
       <div className="grid gap-2">
-        <label className="text-sm font-medium text-stone-700" htmlFor="password">
+        <label className="text-sm font-medium text-[#344054]" htmlFor="password">
           Password
         </label>
         <input
           required
-          className="rounded-2xl border border-stone-300 bg-white px-4 py-3 outline-none transition focus:border-stone-500"
+          className="h-12 rounded-[10px] border border-[#d0d5dd] bg-[#f8fafc] px-4 text-[15px] font-medium outline-none transition focus:border-[var(--brand-blue)]"
           id="password"
           name="password"
           type="password"
@@ -69,14 +69,14 @@ export function SignInForm({ callbackUrl }: SignInFormProps) {
       </div>
 
       <button
-        className="mt-2 rounded-full bg-stone-950 px-5 py-3 font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-2 inline-flex h-12 items-center justify-center rounded-[6px] bg-[var(--brand-blue)] px-5 text-[15px] font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isPending}
         type="submit"
       >
-        {isPending ? "Signing in..." : "Sign in to admin"}
+        {isPending ? "Signing In..." : "Sign In To Admin"}
       </button>
 
-      {error ? <p className="text-sm text-[#a6402d]">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-[#b42318]">{error}</p> : null}
     </form>
   );
 }
