@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createStoredLead } from "@/lib/server-leads";
-import { sendTelegramLeadNotification } from "@/lib/telegram";
+import { deliverLead } from "@/lib/lead-delivery";
 import type { LeadNotificationPayload } from "@/lib/lead-notifications";
 import { isValidUsPhone } from "@/lib/us-phone";
 
@@ -135,24 +135,16 @@ export async function handleExternalLeadSubmission(
   };
 
   const lead = await createStoredLead(payload);
-  let skipped = true;
-  let notificationError: string | null = null;
-
-  try {
-    const result = await sendTelegramLeadNotification(payload);
-    skipped = result.skipped ?? false;
-  } catch (error) {
-    notificationError =
-      error instanceof Error ? error.message : "Telegram notification failed";
-    console.error("Telegram notification failed after external lead persistence:", error);
-  }
+  const delivery = await deliverLead(lead, payload);
 
   return {
     ok: true as const,
     status: 200,
     lead,
-    skipped,
-    notificationError,
+    telegramSkipped: delivery.telegramSkipped,
+    telegramError: delivery.telegramError,
+    sheetSkipped: delivery.sheetSkipped,
+    sheetError: delivery.sheetError,
     input: parsed.data,
   };
 }

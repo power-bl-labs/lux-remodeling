@@ -40,6 +40,10 @@ Important variables:
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
 - `SEED_ADMIN_NAME`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+- `GOOGLE_LEADS_WEBHOOK_URL`
+- `GOOGLE_LEADS_WEBHOOK_SECRET`
 
 ## Database workflow
 Generate Prisma client:

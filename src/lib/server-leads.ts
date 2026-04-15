@@ -59,6 +59,14 @@ export async function createStoredLead(payload: LeadNotificationPayload): Promis
       projectSummary: JSON.stringify(metadata),
       budget:
         typeof payload.estimate === "number" ? String(payload.estimate) : null,
+      activities: {
+        create: {
+          type: "LEAD_CAPTURED",
+          description: `${payload.type} received via ${payload.mode}${
+            payload.sourceLabel ? ` from ${payload.sourceLabel}` : ""
+          }`,
+        },
+      },
     },
   });
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { LeadNotificationPayload } from "@/lib/lead-notifications";
 import { auth } from "@/lib/auth";
 import { listStoredLeads, createStoredLead } from "@/lib/server-leads";
-import { sendTelegramLeadNotification } from "@/lib/telegram";
+import { deliverLead } from "@/lib/lead-delivery";
 
 function isLeadNotificationPayload(value: unknown): value is LeadNotificationPayload {
   if (!value || typeof value !== "object") {
@@ -47,22 +47,14 @@ export async function POST(request: Request) {
     }
 
     const lead = await createStoredLead(body);
-    let skipped = true;
-    let notificationError: string | null = null;
-
-    try {
-      const result = await sendTelegramLeadNotification(body);
-      skipped = result.skipped ?? false;
-    } catch (error) {
-      notificationError =
-        error instanceof Error ? error.message : "Telegram notification failed";
-      console.error("Telegram notification failed after lead persistence:", error);
-    }
+    const delivery = await deliverLead(lead, body);
 
     return NextResponse.json({
       ok: true,
-      skipped,
-      notificationError,
+      telegramSkipped: delivery.telegramSkipped,
+      telegramError: delivery.telegramError,
+      sheetSkipped: delivery.sheetSkipped,
+      sheetError: delivery.sheetError,
       lead,
     });
   } catch (error) {

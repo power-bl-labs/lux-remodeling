@@ -24,8 +24,10 @@ export async function POST(request: Request) {
         ? {
             ok: true,
             lead: result.lead,
-            skipped: result.skipped,
-            notificationError: result.notificationError,
+            telegramSkipped: result.telegramSkipped,
+            telegramError: result.telegramError,
+            sheetSkipped: result.sheetSkipped,
+            sheetError: result.sheetError,
           }
         : { ok: false, error: result.error },
       { status: result.status, headers },
