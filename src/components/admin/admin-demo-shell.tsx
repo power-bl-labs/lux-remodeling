@@ -3,9 +3,9 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import {
   DemoLead,
-  getDemoAdminAuth,
   getDemoAdminCredentials,
   saveDemoAdminPassword,
   setDemoAdminAuth,
@@ -23,6 +23,10 @@ import { toDialableUsPhone } from "@/lib/us-phone";
 
 type SidebarView = "branding" | "leads";
 type LeadTab = "Quick Lead" | "Instant Estimation";
+type AdminDemoShellProps = {
+  userEmail: string;
+  userRole: string;
+};
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -33,7 +37,10 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function AdminDemoShell() {
+export function AdminDemoShell({
+  userEmail,
+  userRole,
+}: AdminDemoShellProps) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -81,7 +88,7 @@ export function AdminDemoShell() {
     }
 
     const frame = window.requestAnimationFrame(() => {
-      setIsAuthed(getDemoAdminAuth());
+      setIsAuthed(true);
       setIsHydrated(true);
     });
 
@@ -128,11 +135,6 @@ export function AdminDemoShell() {
     }
 
     setLoginError("Use your saved admin demo password.");
-  }
-
-  function handleLogout() {
-    setDemoAdminAuth(false);
-    setIsAuthed(false);
   }
 
   function updateThemeField<K extends keyof BrandThemeSettings>(
@@ -362,13 +364,13 @@ export function AdminDemoShell() {
             </button>
           </nav>
 
-          <button
-            className="mt-6 inline-flex h-11 w-full items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white text-[15px] font-semibold text-[#344054] transition hover:border-[#98a2b3]"
-            onClick={handleLogout}
-            type="button"
-          >
-            Log Out
-          </button>
+          <div className="mt-6 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[13px] leading-6 text-[#475467]">
+            <p className="font-semibold text-[#14162b]">{userEmail}</p>
+            <p className="uppercase tracking-[0.16em] text-[#98a2b3]">{userRole}</p>
+          </div>
+          <div className="mt-4">
+            <SignOutButton />
+          </div>
           <Link
             className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-[6px] bg-[var(--brand-blue)] text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(51,72,255,0.18)] transition hover:-translate-y-0.5 hover:opacity-95"
             href="/"
@@ -496,11 +498,15 @@ export function AdminDemoShell() {
                   Security
                 </h3>
                 <p className="mt-3 text-[15px] leading-7 text-[#667085]">
-                  Change the local admin demo password used for signing into this dashboard.
+                  This admin screen now relies on the real manager session instead of the old
+                  browser-only demo password.
                 </p>
 
                 <div className="mt-5 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
-                  Username: <span className="font-semibold text-[#14162b]">admin</span>
+                  Signed in as <span className="font-semibold text-[#14162b]">{userEmail}</span>
+                </div>
+                <div className="mt-3 rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] px-4 py-4 text-[14px] text-[#667085]">
+                  Role <span className="font-semibold uppercase text-[#14162b]">{userRole}</span>
                 </div>
 
                 <form action={handlePasswordSave} className="mt-5 grid gap-4">

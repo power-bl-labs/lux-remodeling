@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 import {
   getStoredSiteBranding,
   saveStoredSiteBranding,
@@ -28,6 +29,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized", branding: null },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const parsed = brandingSchema.safeParse(body);
 

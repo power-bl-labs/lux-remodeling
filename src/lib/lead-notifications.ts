@@ -67,12 +67,19 @@ export async function fetchStoredLeads() {
     });
 
     if (!response.ok) {
-      throw new Error("Lead fetch failed");
+      const data = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null;
+      throw new Error(data?.error ?? "Lead fetch failed");
     }
 
     const data = (await response.json()) as { leads?: StoredLead[] };
     return Array.isArray(data.leads) ? data.leads : [];
-  } catch {
-    return canUseBrowserFallback() ? getDemoLeads() : [];
+  } catch (error) {
+    if (canUseBrowserFallback()) {
+      return getDemoLeads();
+    }
+
+    throw error;
   }
 }

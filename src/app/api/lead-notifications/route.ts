@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { LeadNotificationPayload } from "@/lib/lead-notifications";
+import { auth } from "@/lib/auth";
 import { listStoredLeads, createStoredLead } from "@/lib/server-leads";
 import { sendTelegramLeadNotification } from "@/lib/telegram";
 
@@ -20,6 +21,15 @@ function isLeadNotificationPayload(value: unknown): value is LeadNotificationPay
 
 export async function GET() {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized", leads: [] },
+        { status: 401 },
+      );
+    }
+
     const leads = await listStoredLeads();
     return NextResponse.json({ ok: true, leads });
   } catch (error) {
