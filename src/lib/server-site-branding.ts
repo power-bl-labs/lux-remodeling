@@ -1,9 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { defaultSiteBranding, type SiteBranding } from "@/lib/brand-theme";
+import { hasUsableDatabaseUrl } from "@/lib/database-config";
 
 const SITE_SETTINGS_ID = "default";
 
 export async function getStoredSiteBranding(): Promise<SiteBranding> {
+  if (!hasUsableDatabaseUrl()) {
+    return defaultSiteBranding;
+  }
+
   const settings = await prisma.siteSettings.findUnique({
     where: {
       id: SITE_SETTINGS_ID,
@@ -26,6 +31,13 @@ export async function getStoredSiteBranding(): Promise<SiteBranding> {
 export async function saveStoredSiteBranding(
   input: Partial<SiteBranding>,
 ): Promise<SiteBranding> {
+  if (!hasUsableDatabaseUrl()) {
+    return {
+      ...defaultSiteBranding,
+      ...input,
+    };
+  }
+
   const current = await getStoredSiteBranding();
   const next = {
     ...current,

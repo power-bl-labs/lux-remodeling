@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { EMERGENCY_ADMIN_COOKIE_NAME, readEmergencyAdminCookieValue } from "@/lib/emergency-admin";
+import { buildPublicUrl } from "@/lib/public-url";
 
 export async function proxy(request: NextRequest) {
   const isAdminPath =
@@ -27,8 +28,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const signInUrl = new URL("/sign-in", request.url);
-  signInUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+  const signInUrl = buildPublicUrl(request, "/sign-in");
+  signInUrl.searchParams.set(
+    "callbackUrl",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  );
   return NextResponse.redirect(signInUrl);
 }
 

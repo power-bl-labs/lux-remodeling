@@ -59,15 +59,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               <SignInForm actionUrl="/api/auth/email-login" callbackUrl={callbackUrl} error={error} />
             </div>
 
-            <div className="mt-4">
-              <Link
-                className="text-[14px] font-medium text-[#667085] underline-offset-4 hover:underline"
-                href="/forgot-password"
-              >
-                Forgot your password?
-              </Link>
-            </div>
-
             <div className="mt-8 rounded-[10px] border border-[#e4e7ec] bg-[#f8fafc] p-5 text-[14px] leading-7 text-[#667085]">
               <p>
                 Route: <span className="font-semibold text-[#14162b]">/sign-in</span>

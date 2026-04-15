@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import {
   createEmergencyAdminCookieValue,
   EMERGENCY_ADMIN_COOKIE_NAME,
+  getEmergencyAdminCookieExpiry,
   getEmergencyAdminEmail,
   getEmergencyAdminCookieOptions,
   matchesSeedAdminCredentials,
@@ -64,12 +65,15 @@ export async function POST(request: Request) {
     const cookieValue = createEmergencyAdminCookieValue(
       authenticatedEmail,
     );
-    const [, expiresAtRaw] = cookieValue.split(".");
-    const expiresAt = Number(expiresAtRaw);
+    const expiresAt = getEmergencyAdminCookieExpiry(cookieValue);
     const response = NextResponse.json({
       ok: true,
       redirectUrl: sanitizeCallbackUrl(parsed.data.callbackUrl),
     });
+
+    if (!expiresAt) {
+      throw new Error("Failed to create emergency admin cookie.");
+    }
 
     response.cookies.set(
       EMERGENCY_ADMIN_COOKIE_NAME,

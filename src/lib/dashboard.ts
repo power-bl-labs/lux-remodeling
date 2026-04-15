@@ -1,4 +1,5 @@
 import { LeadStatus } from "@prisma/client";
+import { hasUsableDatabaseUrl } from "@/lib/database-config";
 import { prisma } from "@/lib/prisma";
 
 type DashboardData = {
@@ -10,13 +11,7 @@ type DashboardData = {
 };
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const databaseUrl = process.env.DATABASE_URL ?? "";
-  const isPlaceholderDatabaseUrl =
-    !databaseUrl ||
-    databaseUrl.includes("mysql://USER:PASSWORD@") ||
-    databaseUrl.includes("@localhost:3306/lux_remodeling");
-
-  if (isPlaceholderDatabaseUrl) {
+  if (!hasUsableDatabaseUrl()) {
     return {
       totalLeads: 0,
       newLeads: 0,

@@ -1,12 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type SecurityStatus = {
-  email: string;
-  role: string;
-  resetEmailConfigured: boolean;
-};
+import { useState } from "react";
 
 type AdminSecurityPanelProps = {
   userEmail: string;
@@ -43,7 +37,6 @@ export function AdminSecurityPanel({
   userEmail,
   userRole,
 }: AdminSecurityPanelProps) {
-  const [status, setStatus] = useState<SecurityStatus | null>(null);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -52,28 +45,6 @@ export function AdminSecurityPanel({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
-
-  async function loadStatus() {
-    const response = await fetch("/api/auth/security-status", {
-      method: "GET",
-      cache: "no-store",
-    });
-    const data = (await response.json()) as
-      | { security?: SecurityStatus; error?: string }
-      | null;
-
-    if (!response.ok || !data?.security) {
-      throw new Error(data?.error ?? "Could not load security settings.");
-    }
-
-    setStatus(data.security);
-  }
-
-  useEffect(() => {
-    void loadStatus().catch((nextError) => {
-      setError(nextError instanceof Error ? nextError.message : "Unknown error");
-    });
-  }, []);
 
   async function changePassword() {
     try {
@@ -95,30 +66,13 @@ export function AdminSecurityPanel({
     }
   }
 
-  async function sendResetLink() {
-    try {
-      setIsBusy(true);
-      setError(null);
-      setFeedback(null);
-
-      await postJson("/api/auth/request-password-reset", {
-        email: userEmail,
-      });
-      setFeedback("If email is configured, a reset link has been sent.");
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Unknown error");
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
   return (
     <div className="rounded-[12px] border border-[#e4e7ec] bg-white p-6 shadow-[0_16px_44px_rgba(15,23,42,0.06)]">
       <h3 className="text-[24px] leading-[1] font-semibold tracking-[-0.04em] text-[var(--brand-dark)]">
         Security
       </h3>
       <p className="mt-3 text-[15px] leading-7 text-[#667085]">
-        Manage password access and reset links for the live admin account.
+        Manage simple email and password access for the admin account.
       </p>
 
       <div className="mt-5 grid gap-3">
@@ -136,6 +90,10 @@ export function AdminSecurityPanel({
       <div className="mt-6 grid gap-4">
         <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] p-4">
           <p className="text-[14px] font-semibold text-[#344054]">Change Password</p>
+          <p className="mt-2 text-[14px] leading-6 text-[#667085]">
+            Password reset by email is disabled in this build. Use this form after signing in, or update
+            `SEED_ADMIN_PASSWORD` in Hostinger and redeploy if you need to replace the admin password directly.
+          </p>
           <div className="mt-4 grid gap-3">
             <input
               className="h-11 rounded-[8px] border border-[#d0d5dd] bg-white px-3 text-[14px] font-medium text-[#344054] outline-none"
@@ -187,23 +145,6 @@ export function AdminSecurityPanel({
               Update Password
             </button>
           </div>
-        </div>
-
-        <div className="rounded-[10px] border border-[#eaecf0] bg-[#f8fafc] p-4">
-          <p className="text-[14px] font-semibold text-[#344054]">Password Reset Link</p>
-          <p className="mt-2 text-[14px] leading-6 text-[#667085]">
-            {status?.resetEmailConfigured
-              ? "Send a reset link to your admin email for emergency password recovery."
-              : "Add SMTP credentials first if you want reset links sent by email."}
-          </p>
-          <button
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-[6px] border border-[#d0d5dd] bg-white px-4 text-[14px] font-semibold text-[#344054] disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isBusy || !status?.resetEmailConfigured}
-            onClick={() => void sendResetLink()}
-            type="button"
-          >
-            Email Me A Reset Link
-          </button>
         </div>
       </div>
 

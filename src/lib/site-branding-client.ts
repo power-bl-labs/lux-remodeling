@@ -12,7 +12,45 @@ function isBrowser() {
 }
 
 function getLocalFallbackBranding(): SiteBranding {
-  return defaultSiteBranding;
+  if (!isBrowser()) {
+    return defaultSiteBranding;
+  }
+
+  try {
+    const storedTheme = window.localStorage.getItem(LEGACY_THEME_KEY);
+    const storedLogo = window.localStorage.getItem(LEGACY_LOGO_KEY);
+    const parsedTheme = storedTheme
+      ? (JSON.parse(storedTheme) as Partial<BrandThemeSettings>)
+      : null;
+
+    return {
+      brandBlue: parsedTheme?.brandBlue ?? defaultSiteBranding.brandBlue,
+      brandDark: parsedTheme?.brandDark ?? defaultSiteBranding.brandDark,
+      brandSoft: parsedTheme?.brandSoft ?? defaultSiteBranding.brandSoft,
+      brandAccent: parsedTheme?.brandAccent ?? defaultSiteBranding.brandAccent,
+      logoSrc: storedLogo ?? defaultSiteBranding.logoSrc,
+    };
+  } catch {
+    return defaultSiteBranding;
+  }
+}
+
+function isDefaultBranding(branding: SiteBranding) {
+  return (
+    branding.brandBlue === defaultSiteBranding.brandBlue &&
+    branding.brandDark === defaultSiteBranding.brandDark &&
+    branding.brandSoft === defaultSiteBranding.brandSoft &&
+    branding.brandAccent === defaultSiteBranding.brandAccent &&
+    branding.logoSrc === defaultSiteBranding.logoSrc
+  );
+}
+
+function canUseBrowserFallback() {
+  return (
+    isBrowser() &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+  );
 }
 
 function syncLegacyBrandingCache(branding: SiteBranding) {
@@ -41,6 +79,8 @@ function syncLegacyBrandingCache(branding: SiteBranding) {
 }
 
 export async function fetchSiteBranding(): Promise<SiteBranding> {
+  const localFallbackBranding = getLocalFallbackBranding();
+
   try {
     const response = await fetch("/api/site-branding", {
       method: "GET",
@@ -53,28 +93,51 @@ export async function fetchSiteBranding(): Promise<SiteBranding> {
 
     const data = (await response.json()) as { branding?: SiteBranding };
     const branding = data.branding ?? defaultSiteBranding;
+
+    if (
+      canUseBrowserFallback() &&
+      !isDefaultBranding(localFallbackBranding) &&
+      isDefaultBranding(branding)
+    ) {
+      return localFallbackBranding;
+    }
+
     syncLegacyBrandingCache(branding);
     return branding;
   } catch {
-    return getLocalFallbackBranding();
+    return localFallbackBranding;
   }
 }
 
 export async function saveSiteBranding(input: Partial<SiteBranding>) {
-  const response = await fetch("/api/site-branding", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
+  try {
+    const response = await fetch("/api/site-branding", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    throw new Error("Branding save failed");
+    if (!response.ok) {
+      throw new Error("Branding save failed");
+    }
+
+    const data = (await response.json()) as { branding?: SiteBranding };
+    const branding = data.branding ?? defaultSiteBranding;
+    syncLegacyBrandingCache(branding);
+    return branding;
+  } catch (error) {
+    if (!canUseBrowserFallback()) {
+      throw error;
+    }
+
+    const branding = {
+      ...getLocalFallbackBranding(),
+      ...input,
+    };
+
+    syncLegacyBrandingCache(branding);
+    return branding;
   }
-
-  const data = (await response.json()) as { branding?: SiteBranding };
-  const branding = data.branding ?? defaultSiteBranding;
-  syncLegacyBrandingCache(branding);
-  return branding;
 }

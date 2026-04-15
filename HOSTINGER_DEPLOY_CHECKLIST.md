@@ -15,6 +15,7 @@
 - `DATABASE_URL`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
+- `SECURITY_ENCRYPTION_KEY`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
 - `SEED_ADMIN_NAME`
@@ -22,6 +23,7 @@
 ## Recommended production values
 - `NEXTAUTH_URL` should be the final HTTPS app URL.
 - `NEXTAUTH_SECRET` should be a long random string.
+- `SECURITY_ENCRYPTION_KEY` should be a separate long random string used for the emergency admin cookie.
 - Use a dedicated production DB user, not a shared root-style account.
 - Use a strong unique admin password for initial seed.
 
@@ -65,6 +67,7 @@ npm run start
 - `/admin` redirects to sign-in when logged out.
 - Seeded admin can sign in.
 - Session persists after login.
+- Forgot password flow is intentionally disabled in this build.
 - Lead creation works against production MySQL.
 - No placeholder env values remain.
 

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   createEmergencyAdminCookieValue,
+  getEmergencyAdminCookieExpiry,
   getEmergencyAdminCookieOptions,
   getEmergencyAdminEmail,
   matchesSeedAdminCredentials,
@@ -53,13 +54,17 @@ export async function directAdminSignInAction(formData: FormData) {
   }
 
   const cookieValue = createEmergencyAdminCookieValue(authenticatedEmail);
-  const [, expiresAtRaw] = cookieValue.split(".");
+  const expiresAt = getEmergencyAdminCookieExpiry(cookieValue);
   const cookieStore = await cookies();
+
+  if (!expiresAt) {
+    throw new Error("Failed to create emergency admin cookie.");
+  }
 
   cookieStore.set(
     "lux_admin_emergency",
     cookieValue,
-    getEmergencyAdminCookieOptions(Number(expiresAtRaw)),
+    getEmergencyAdminCookieOptions(expiresAt),
   );
 
   redirect(callbackUrl);

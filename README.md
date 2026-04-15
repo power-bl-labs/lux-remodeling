@@ -36,6 +36,7 @@ Important variables:
 - `DATABASE_URL`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
+- `SECURITY_ENCRYPTION_KEY`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
 - `SEED_ADMIN_NAME`
@@ -80,7 +81,7 @@ Recommended production setup:
 - one Next.js app
 - one MySQL database
 - env vars managed in Hostinger panel
-- credentials or magic-link auth via next-auth
+- simple email and password admin login
 
 ## Current status
 - Public shell is in place

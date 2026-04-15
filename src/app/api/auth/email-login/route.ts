@@ -3,9 +3,11 @@ import { NextResponse } from "next/server";
 import {
   createEmergencyAdminCookieValue,
   EMERGENCY_ADMIN_COOKIE_NAME,
+  getEmergencyAdminCookieExpiry,
   getEmergencyAdminCookieOptions,
   matchesSeedAdminCredentials,
 } from "@/lib/emergency-admin";
+import { buildPublicUrl } from "@/lib/public-url";
 import { prisma } from "@/lib/prisma";
 
 function sanitizeCallbackUrl(value: string | null | undefined) {
@@ -14,16 +16,6 @@ function sanitizeCallbackUrl(value: string | null | undefined) {
   }
 
   return value;
-}
-
-function getPublicBaseUrl(request: Request) {
-  const configuredBaseUrl = process.env.NEXTAUTH_URL?.trim();
-
-  if (configuredBaseUrl) {
-    return configuredBaseUrl;
-  }
-
-  return request.url;
 }
 
 export async function POST(request: Request) {
@@ -37,41 +29,49 @@ export async function POST(request: Request) {
   if (matchesSeedAdminCredentials(email, password)) {
     authenticatedEmail = email;
   } else {
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-      select: {
-        email: true,
-        hashedPassword: true,
-      },
-    });
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          email,
+        },
+        select: {
+          email: true,
+          hashedPassword: true,
+        },
+      });
 
-    if (user?.hashedPassword) {
-      const isValid = await bcrypt.compare(password, user.hashedPassword);
+      if (user?.hashedPassword) {
+        const isValid = await bcrypt.compare(password, user.hashedPassword);
 
-      if (isValid) {
-        authenticatedEmail = user.email;
+        if (isValid) {
+          authenticatedEmail = user.email;
+        }
       }
+    } catch (error) {
+      console.error("Email login user lookup failed.", error);
     }
   }
 
   if (!authenticatedEmail) {
-    const redirectUrl = new URL("/sign-in", getPublicBaseUrl(request));
+    const redirectUrl = buildPublicUrl(request, "/sign-in");
     redirectUrl.searchParams.set("error", "invalid");
     redirectUrl.searchParams.set("callbackUrl", callbackUrl);
     return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 
   const cookieValue = createEmergencyAdminCookieValue(authenticatedEmail);
-  const [, expiresAtRaw] = cookieValue.split(".");
-  const redirectUrl = new URL(callbackUrl, getPublicBaseUrl(request));
+  const expiresAt = getEmergencyAdminCookieExpiry(cookieValue);
+  const redirectUrl = buildPublicUrl(request, callbackUrl);
   const response = NextResponse.redirect(redirectUrl, { status: 303 });
+
+  if (!expiresAt) {
+    throw new Error("Failed to create emergency admin cookie.");
+  }
 
   response.cookies.set(
     EMERGENCY_ADMIN_COOKIE_NAME,
     cookieValue,
-    getEmergencyAdminCookieOptions(Number(expiresAtRaw)),
+    getEmergencyAdminCookieOptions(expiresAt),
   );
 
   return response;

@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { UserRole } from "@prisma/client";
 import type { Session } from "next-auth";
 import { cookies } from "next/headers";
+import { hasUsableDatabaseUrl } from "@/lib/database-config";
 import { prisma } from "@/lib/prisma";
 
 export const EMERGENCY_ADMIN_COOKIE_NAME = "lux_admin_emergency";
@@ -55,16 +56,46 @@ export function createEmergencyAdminCookieValue(email: string) {
   return `${payload}.${signature}`;
 }
 
+function parseEmergencyAdminCookieValue(value: string) {
+  const signatureSeparatorIndex = value.lastIndexOf(".");
+
+  if (signatureSeparatorIndex <= 0) {
+    return null;
+  }
+
+  const expiresSeparatorIndex = value.lastIndexOf(".", signatureSeparatorIndex - 1);
+
+  if (expiresSeparatorIndex <= 0) {
+    return null;
+  }
+
+  const email = value.slice(0, expiresSeparatorIndex);
+  const expiresAtRaw = value.slice(expiresSeparatorIndex + 1, signatureSeparatorIndex);
+  const signature = value.slice(signatureSeparatorIndex + 1);
+
+  if (!email || !expiresAtRaw || !signature) {
+    return null;
+  }
+
+  return {
+    email,
+    expiresAtRaw,
+    signature,
+  };
+}
+
 export function readEmergencyAdminCookieValue(value: string | null | undefined) {
   if (!value) {
     return null;
   }
 
-  const [email, expiresAtRaw, signature] = value.split(".");
+  const parsedValue = parseEmergencyAdminCookieValue(value);
 
-  if (!email || !expiresAtRaw || !signature) {
+  if (!parsedValue) {
     return null;
   }
+
+  const { email, expiresAtRaw, signature } = parsedValue;
 
   const expiresAt = Number(expiresAtRaw);
 
@@ -88,6 +119,10 @@ export function readEmergencyAdminCookieValue(value: string | null | undefined) 
     email,
     expiresAt,
   };
+}
+
+export function getEmergencyAdminCookieExpiry(value: string) {
+  return readEmergencyAdminCookieValue(value)?.expiresAt ?? null;
 }
 
 export function getEmergencyAdminCookieOptions(expiresAt?: number | Date) {
@@ -116,17 +151,32 @@ export async function getEmergencyAdminSession(): Promise<Session | null> {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      email: parsed.email,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-    },
-  });
+  let user:
+    | {
+        id: string;
+        email: string;
+        name: string | null;
+        role: UserRole;
+      }
+    | null = null;
+
+  if (hasUsableDatabaseUrl()) {
+    try {
+      user = await prisma.user.findUnique({
+        where: {
+          email: parsed.email,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+    } catch (error) {
+      console.error("Emergency admin session user lookup failed.", error);
+    }
+  }
 
   return {
     expires: new Date(parsed.expiresAt).toISOString(),
