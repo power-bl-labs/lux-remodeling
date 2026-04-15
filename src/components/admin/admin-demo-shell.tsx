@@ -454,6 +454,11 @@ export function AdminDemoShell({
                             <span className="rounded-[6px] bg-[#eef4ff] px-3 py-1 text-[12px] font-semibold text-[var(--brand-blue)]">
                               {lead.mode}
                             </span>
+                            {lead.sourceLabel ? (
+                              <span className="rounded-[6px] bg-[#f6f2ff] px-3 py-1 text-[12px] font-semibold text-[#6941c6]">
+                                {lead.sourceLabel}
+                              </span>
+                            ) : null}
                             <span className="text-[13px] font-medium text-[#667085]">
                               {formatDate(lead.createdAt)}
                             </span>
@@ -464,6 +469,11 @@ export function AdminDemoShell({
                               {lead.service}
                             </h3>
                             <p className="mt-2 text-[16px] font-medium text-[#475467]">{lead.phone}</p>
+                            {lead.sourceSite ? (
+                              <p className="mt-2 text-[13px] font-medium text-[#667085]">
+                                Source: {lead.sourceSite}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -506,6 +516,11 @@ export function AdminDemoShell({
                           <span className="rounded-[6px] bg-[#eef4ff] px-3 py-1 text-[12px] font-semibold text-[var(--brand-blue)]">
                             {lead.propertyType ?? "Project"}
                           </span>
+                          {lead.sourceLabel ? (
+                            <span className="rounded-[6px] bg-[#f6f2ff] px-3 py-1 text-[12px] font-semibold text-[#6941c6]">
+                              {lead.sourceLabel}
+                            </span>
+                          ) : null}
                           <span className="rounded-[6px] bg-[#fff6d8] px-3 py-1 text-[12px] font-semibold text-[#8a6b00]">
                             Starting From {lead.estimate ? `$${lead.estimate.toLocaleString()}` : "N/A"}
                           </span>
@@ -523,6 +538,11 @@ export function AdminDemoShell({
                               <p className="mt-2 text-[16px] font-medium text-[#475467]">
                                 {lead.phone}
                               </p>
+                              {lead.sourceSite ? (
+                                <p className="mt-2 text-[13px] font-medium text-[#667085]">
+                                  Source: {lead.sourceSite}
+                                </p>
+                              ) : null}
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

@@ -30,6 +30,16 @@ function buildTelegramMessage(payload: LeadNotificationPayload) {
     lines.push(`<b>Name:</b> ${escapeHtml(payload.name)}`);
   }
 
+  if (payload.sourceLabel || payload.sourceSite) {
+    lines.push(
+      `<b>Source:</b> ${escapeHtml(payload.sourceLabel ?? payload.sourceSite ?? "")}`,
+    );
+  }
+
+  if (payload.pageUrl) {
+    lines.push(`<b>Page:</b> ${escapeHtml(payload.pageUrl)}`);
+  }
+
   if (payload.zipCode) {
     lines.push(`<b>ZIP:</b> ${escapeHtml(payload.zipCode)}`);
   }

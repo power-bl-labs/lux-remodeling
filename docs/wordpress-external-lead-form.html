@@ -1,0 +1,92 @@
+<div id="lux-external-lead-form">
+  <form id="luxLeadForm" style="display:grid;gap:12px;max-width:420px;">
+    <input
+      id="luxService"
+      name="service"
+      type="text"
+      placeholder="What do you need?"
+      required
+      style="height:48px;padding:0 14px;border:1px solid #d0d5dd;border-radius:10px;font:600 16px/1.2 Arial,sans-serif;"
+    />
+    <input
+      id="luxPhone"
+      name="phone"
+      type="tel"
+      placeholder="(408) 555-0123"
+      required
+      style="height:48px;padding:0 14px;border:1px solid #d0d5dd;border-radius:10px;font:600 16px/1.2 Arial,sans-serif;"
+    />
+    <input
+      id="luxWebsiteTrap"
+      name="website"
+      type="text"
+      autocomplete="off"
+      tabindex="-1"
+      style="position:absolute;left:-9999px;opacity:0;pointer-events:none;"
+    />
+    <button
+      type="submit"
+      style="height:48px;border:0;border-radius:8px;background:#3348ff;color:#fff;font:700 16px/1 Arial,sans-serif;cursor:pointer;"
+    >
+      Submit
+    </button>
+    <p id="luxLeadFeedback" style="margin:0;font:500 14px/1.5 Arial,sans-serif;color:#667085;"></p>
+  </form>
+</div>
+
+<script>
+  (function () {
+    var form = document.getElementById("luxLeadForm");
+    var feedback = document.getElementById("luxLeadFeedback");
+    var submitButton = form.querySelector('button[type="submit"]');
+    var endpoint = "https://mediumslateblue-falcon-275723.hostingersite.com/api/external-lead";
+    var sourceLabel = "WordPress External Site";
+
+    function setFeedback(message, isError) {
+      feedback.textContent = message;
+      feedback.style.color = isError ? "#b42318" : "#667085";
+    }
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      setFeedback("", false);
+      submitButton.disabled = true;
+      submitButton.textContent = "Sending...";
+
+      try {
+        var service = document.getElementById("luxService").value.trim();
+        var phone = document.getElementById("luxPhone").value.trim();
+        var honeypot = document.getElementById("luxWebsiteTrap").value.trim();
+
+        var body = new URLSearchParams();
+        body.set("service", service);
+        body.set("phone", phone);
+        body.set("website", honeypot);
+        body.set("sourceSite", window.location.origin);
+        body.set("sourceLabel", sourceLabel);
+        body.set("pageUrl", window.location.href);
+
+        var response = await fetch(endpoint, {
+          method: "POST",
+          body: body
+        });
+
+        var data = await response.json().catch(function () {
+          return null;
+        });
+
+        if (!response.ok) {
+          throw new Error((data && data.error) || "Could not send your request.");
+        }
+
+        form.reset();
+        setFeedback("Thanks. We received your request and will contact you soon.", false);
+      } catch (error) {
+        setFeedback(error.message || "Could not send your request.", true);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit";
+      }
+    });
+  })();
+</script>

@@ -6,6 +6,9 @@ export type LeadNotificationPayload = {
   service: string;
   phone: string;
   name?: string;
+  sourceSite?: string;
+  sourceLabel?: string;
+  pageUrl?: string;
   zipCode?: string;
   timeline?: string;
   squareFootage?: number;
